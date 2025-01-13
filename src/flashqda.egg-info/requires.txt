@@ -1,6 +1,0 @@
-requests
-tqdm
-openai
-pandas
-numpy
-nltk
