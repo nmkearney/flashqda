@@ -1,6 +1,6 @@
 # FlashQDA
 
-This is a package for using Large Landuage Models for qualitative data analysis.
+This is a package for using Large Language Models for qualitative data analysis.
 
 To install:
 
