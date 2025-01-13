@@ -1,0 +1,15 @@
+Context:
+
+List of tenses: simple past, past perfect, past continuous, past perfect continuous, simple present, present perfect, present continuous, present perfect continuous, simple future, future perfect, future continuous, or future perfect continuous.
+
+Task:
+
+Read the following sentence: {sentence}.
+
+What tenses are used in the sentence?
+
+Instructions:
+
+1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
+2. Only use the provided tenses as answers.
+3. The expected JSON format is: {{"tenses": {{"tense 1": "tense", "tense 2": "tense", ...}}}}.

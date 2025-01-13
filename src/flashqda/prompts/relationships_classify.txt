@@ -1,0 +1,23 @@
+Context:
+
+Here are three types of relationship: correlational, causal, and none.
+
+Correlational type: The statement describes the association between variables, but causation cannot be explicitly stated. Language cues include: correlated, associated, related, linked, varies.
+
+Causal type: The statement says that the independent variable directly alters the dependent variable. Language cues include: increase, decrease, lead to, prevent, can.
+
+None: No correlation/causation relationship is mentioned in the statement.
+
+Consider the following sentence(s), which occur before the sentence to be analyzed: {context_window}.
+
+Task:
+
+Read the following sentence: {sentence}.
+
+What types of relationships are described in the sentence?
+
+Instructions:
+
+1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
+2. Use only the following terms to describe the relationships: "correlational", "causal", or "none".
+3. The expected JSON format is: {{"relationships": {{"relationship 1": "type", "relationship 2": "type", ...}}}}.

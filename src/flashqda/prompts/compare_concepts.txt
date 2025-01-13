@@ -1,0 +1,18 @@
+Context:
+
+Equivalent: The terms mean the same thing and can always be used interchangeably.
+Very similar: The terms mean almost the same thing, and in most cases they can be used interchangeably.
+Somewhat similar: The meanings of the terms overlap, but in some cases they cannot be used interchangeably.
+Not very similar: The terms mean almost completely different things, and in most cases they cannot be used interchangeably.
+Unrelated: The terms mean completely different things, and they can never be used interchangeably.
+
+Task:
+
+Read the following terms: {concept_1}, {concept_2}.
+
+How similar are the terms?
+
+Instructions:
+
+1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
+2. The expected JSON format is: {{"similarity": similarity}}.

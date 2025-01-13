@@ -1,0 +1,17 @@
+Context:
+
+Criteria: {criteria}.
+
+Consider the following text, which occurs before the text to be analyzed: {context_window}.
+
+Task:
+
+Read the following text: {text}.
+
+What criteria apply to the text?
+
+Instructions:
+
+1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
+2. Only use the provided criteria as answers.
+3. The expected JSON format is: {{"criteria": {{"criterion 1": "criterion", "criterion 2": "criterion", ...}}}}.

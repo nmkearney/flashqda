@@ -1,0 +1,16 @@
+Context:
+
+Consider the following sentence(s), which occur before the sentence to be analyzed: {context_window}.
+
+Task:
+
+Read the following sentence: {sentence}.
+
+What are the causal relationships described in the sentence?
+
+Instructions:
+
+1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
+2. Identify each cause in the sentence.
+3. Identify the corresponding effect for each cause.
+4. The expected JSON format is: {{"relationships": [{{"cause": "cause", "effect": "effect"}}, {{"cause": "cause", "effect": "effect"}}, ...]}}
