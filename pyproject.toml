@@ -26,4 +26,4 @@ Homepage = "https://github.com/nmkearney/flashqda"
 Issues = "https://github.com/nmkearney/flashqda/issues"
 
 [tool.setuptools]
-package-data = {"" = ["prompts/*.txt"]}
+flashqda = ["prompts/*.txt"]
