@@ -1,6 +1,6 @@
 [project]
 name = "flashqda"
-version = "1.0.3"
+version = "1.0.4"
 authors = [
     { name = "Norman Kearney", email = "norman.kearney@protonmail.com"},
 ]
@@ -25,5 +25,5 @@ dependencies = [
 Homepage = "https://github.com/nmkearney/flashqda"
 Issues = "https://github.com/nmkearney/flashqda/issues"
 
-[tools.setuptools]
+[tool.setuptools]
 package-data = {"" = ["prompts/*.txt"]}
