@@ -25,5 +25,5 @@ dependencies = [
 Homepage = "https://github.com/nmkearney/flashqda"
 Issues = "https://github.com/nmkearney/flashqda/issues"
 
-[tool.setuptools]
+[tool.setuptools.package-data]
 flashqda = ["prompts/*.txt"]
