@@ -53,7 +53,7 @@ def get_documents():
         txt_path = os.path.join('Data', txt_file)
 
         # Read text from the txt file
-        with open(txt_path, 'r', encoding='utf-8') as txt_file:
+        with open(txt_path, mode = 'r', newline = '', encoding='utf-8') as txt_file:
             text = txt_file.read()
 
         document = {

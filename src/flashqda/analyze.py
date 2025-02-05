@@ -237,7 +237,7 @@ def initialize_files_analysis(directory, save_name, analysis_type, terms_to_chec
     
     # Ensure log file exists or create with default values
     if not os.path.exists(log_file):
-        with open(log_file, 'w') as log:
+        with open(log_file, mode = 'w', newline = '', encoding='utf-8') as log:
             writer = csv.writer(log)
             writer.writerow(['start_time', 'end_time', 'last_processed_document', 'last_processed_sentence'])
             writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 0, 1, -1])
@@ -256,7 +256,7 @@ def initialize_files_analysis(directory, save_name, analysis_type, terms_to_chec
 
 def get_start_ids(log_file):
     try:
-        with open(log_file, 'r') as log:
+        with open(log_file, mode = 'r', newline = '', encoding='utf-8') as log:
             reader = csv.reader(log)
             next(reader)  # Skip header
             row = next(reader)
@@ -269,7 +269,7 @@ def get_start_ids(log_file):
     return start_time, end_time, start_document_id, start_sentence_id
 
 def update_log(log_file, start_time, end_time, document_id, sentence_id):
-    with open(log_file, 'w') as log:
+    with open(log_file, mode = 'w', newline = '', encoding='utf-8') as log:
         writer = csv.writer(log)
         writer.writerow(['start_time', 'end_time', 'last_processed_document', 'last_processed_sentence'])
         writer.writerow([start_time, end_time, document_id, sentence_id])
@@ -335,7 +335,7 @@ def handle_classified_sentence(sentence, analysis_type, decisions_count, subscor
     existing_results.append(classified_sentence)
 
 def document_analysis(log_file, filter, subscore_basis, filter_cutoff, terms_to_check):
-    with open(log_file, 'a', newline='') as log:
+    with open(log_file, mode = 'a', newline = '', encoding='utf-8') as log:
         writer = csv.writer(log)
         writer.writerow(['filter', 'subscore_basis', 'filter_cutoff', 'terms_to_check'])
         writer.writerow([filter, subscore_basis, filter_cutoff, terms_to_check])
@@ -406,7 +406,7 @@ def score_sentences(sentences, subscores, weights, save_name):
         scored_sentences.append(scored_sentence)  # Append modified dictionary to new list
 
     # Save the list of sentences as a csv file
-    with open(TEMP_FILE, 'w') as f:
+    with open(TEMP_FILE, mode = 'w', newline = '', encoding='utf-8') as f:
         pd.DataFrame(scored_sentences).to_csv(f, index=False)
     results_folder = 'Results' + save_name + '/'
     save_to_csv(scored_sentences, results_folder, save_name + '_sentences.csv')
@@ -461,7 +461,7 @@ def initialize_files_comparison(directory, save_name):
     
     # Ensure log file exists or create with default values
     if not os.path.exists(log_file):
-        with open(log_file, 'w') as log:
+        with open(log_file, mode = 'w', newline = '', encoding='utf-8') as log:
             writer = csv.writer(log)
             writer.writerow(['start_time', 'end_time', 'last_processed_concept_1', 'last_processed_concept_2', 'concepts'])
             writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 0, 0, 0, len(concepts)])
@@ -477,7 +477,7 @@ def initialize_files_comparison(directory, save_name):
 
 def get_start_ids_comparison(log_file):
     try:
-        with open(log_file, 'r') as log:
+        with open(log_file, mode = 'r', newline = '', encoding='utf-8') as log:
             reader = csv.reader(log)
             next(reader)  # Skip header
             row = next(reader)
@@ -490,7 +490,7 @@ def get_start_ids_comparison(log_file):
     return start_time, end_time, start_concept_1_id, start_concept_2_id, num_concepts
 
 def update_log_comparison(log_file, start_time, end_time, concept_1_id, concept_2_id, num_concepts):
-    with open(log_file, 'w') as log:
+    with open(log_file, mode = 'w', newline = '', encoding='utf-8') as log:
         writer = csv.writer(log)
         writer.writerow(['start_time', 'end_time', 'last_processed_concept_1', 'last_processed_concept_2', 'num_concepts'])
         writer.writerow([start_time, end_time, concept_1_id, concept_2_id, num_concepts])

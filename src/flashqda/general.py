@@ -1,15 +1,21 @@
 import os, csv
 
-def initialize_project(directory):
+def initialize_project(directory, api_key_path = ''):
     
     """
-    Prepare the project directory and required subdirectories.
+    Prepare the project directory and required subdirectories and retrieve the API key.
     """
 
     os.makedirs(directory, exist_ok=True)
     os.makedirs(os.path.join(directory, 'Data'), exist_ok=True)
     os.makedirs(os.path.join(directory, 'Results'), exist_ok=True)
     os.chdir(directory)
+    
+    try:
+        with open(api_key_path, mode = 'r') as f:
+            os.environ['OPENAI_API_KEY'] = f.read().strip()
+    except FileNotFoundError:
+        print("API key file not found.")
 
 def save_to_csv(data_list, results_folder, save_name):
     """
@@ -40,7 +46,7 @@ def read_csv_file(file_name):
     file_path = os.path.join(results_folder, file_name)
 
     try:
-        with open(file_path, "r") as file:
+        with open(file_path, mode = "r", newline = '', encoding='utf-8') as file:
             csv_reader = csv.DictReader(file)
             data = list(csv_reader)
             print("CSV file read:", file_path)
