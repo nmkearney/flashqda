@@ -36,7 +36,7 @@ def initialize_files(file_name):
     # Ensure log file exists or create with default values
     log_file = os.path.join(log_folder, f"{file_name}_screening_log.csv")
     if not os.path.exists(log_file):
-        with open(log_file, 'w', newline = '', encoding='utf-8') as log:
+        with open(log_file, mode = 'w', newline = '', encoding='utf-8') as log:
             writer = csv.writer(log)
             writer.writerow(['start_time', 'end_time', 'last_processed_row', 'num_rows'])
             writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 0, 0, len(abstracts)])
@@ -53,7 +53,7 @@ def initialize_files(file_name):
 
 def get_start_ids(log_file):
     try:
-        with open(log_file, 'r') as log:
+        with open(log_file, mode = 'r', newline = '', encoding='utf-8') as log:
             reader = csv.reader(log)
             next(reader)  # Skip header
             row = next(reader)
@@ -66,7 +66,7 @@ def get_start_ids(log_file):
     return start_time, end_time, start_abstract_id, num_abstracts
 
 def update_log(log_file, start_time, end_time, abstract_id, num_abstracts):
-    with open(log_file, 'w') as log:
+    with open(log_file, mode= 'w', newline = '', encoding='utf-8') as log:
         writer = csv.writer(log)
         writer.writerow(['start_time', 'end_time', 'last_processed_row', 'num_rows'])
         writer.writerow([start_time, end_time, abstract_id, num_abstracts])
