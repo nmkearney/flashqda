@@ -1,16 +1,36 @@
 Context:
 
-Consider the following sentence(s), which occur before the sentence to be analyzed: {context_window}.
+Consider the following sentence(s), which occur before the sentence to be analyzed:
+{context_window}
 
 Task:
 
-Read the following sentence: {sentence}.
+Read the following sentence:
+{sentence}
 
-What are the causal relationships described in the sentence?
+Identify any causal relationships expressed in the sentence. For each one, extract a clear and meaningful version of both the cause and effect.
 
 Instructions:
 
-1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
-2. Identify each cause in the sentence.
-3. Identify the corresponding effect for each cause.
-4. The expected JSON format is: {{"relationships": [{{"cause": "cause", "effect": "effect"}}, {{"cause": "cause", "effect": "effect"}}, ...]}}
+1. Think through the sentence step-by-step, but respond with only the final answer as JSON.
+2. Identify each cause — the condition or factor that enables or produces something.
+3. Identify each effect — the result or consequence that logically follows from the cause.
+4. Consider both directions (A → B and B → A) and choose the one that best reflects the meaning of the sentence.
+5. Refine both the cause and the effect to express the core idea clearly. Compare each phrase to the original sentence and adjust as needed for accuracy.
+- Prefer concise noun phrases (3–10 words), unless a verb phrase better expresses the meaning.
+- Preserve important modifiers, quantities, or qualifiers (e.g., numbers, timeframes, degrees).
+- Avoid full sentences and unnecessary punctuation.
+6. Respond in valid JSON using the following format:
+
+{{
+  "relationships": [
+    {{
+      "cause": "refined cause phrase",
+      "effect": "refined effect phrase"
+    }},
+    {{
+      "cause": "another cause",
+      "effect": "another effect"
+    }}
+  ]
+}}

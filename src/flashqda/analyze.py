@@ -1,4 +1,4 @@
-from .general import save_to_csv, read_csv_file
+from .general import save_to_csv
 import re, csv, os, threading, string, requests, random, time
 from openai import OpenAI
 from tqdm import tqdm
@@ -39,42 +39,52 @@ def api_call_wrapper(system_prompt, prompt, result_container, event):
         event.set()
 
 def send_to_openai(system_prompt, prompt, max_retries=3, manual_timeout=15):
+    """Handle time-outs and malformed responses from OpenAI."""
     
-    """Handle time-outs by OpenAI."""
-    
-    base_delay = 1  # Base delay in seconds
-    max_delay = 480  # Max delay in seconds
+    base_delay = 1      # Base delay in seconds
+    max_delay = 480     # Max delay in seconds
     retries = 0
-    
+
     while retries < max_retries:
-        #print("Making API call...")
-        
         result_container = [None, None]
         done_event = threading.Event()
-        
-        api_thread = threading.Thread(target=api_call_wrapper, args=(system_prompt, prompt, result_container, done_event))
+
+        api_thread = threading.Thread(
+            target=api_call_wrapper,
+            args=(system_prompt, prompt, result_container, done_event)
+        )
         api_thread.start()
         api_thread.join(timeout=manual_timeout)
-        
+
+        response, error = result_container
+
         if done_event.is_set():
-            response, error = result_container
-            if response:
-                clean_response = response.choices[0].message.content.strip().lower()
-                return clean_response
+            if response and hasattr(response, "choices"):
+                try:
+                    clean_response = response.choices[0].message.content.strip().lower()
+                    return clean_response
+                except Exception as e:
+                    print(f"Malformed OpenAI response: {e}")
+                    return None
             elif isinstance(error, requests.exceptions.Timeout):
+                print("Timeout exception.")
                 retries += 1
-                delay = base_delay * (2 ** retries)  # Exponential backoff
-                delay = min(max_delay, delay) + random.uniform(0, 0.1*base_delay)  # Add some jitter
+                delay = base_delay * (2 ** retries)
+                delay = min(max_delay, delay) + random.uniform(0, 0.1 * base_delay)
                 time.sleep(delay)
-                print("Timeout exception")
+            elif error:
+                print(f"OpenAI API error: {error}")
+                return None
             else:
-                raise error  # Some other exception occurred
+                print("OpenAI returned no response and no error.")
+                return None
         else:
-            # The manual timeout was triggered
+            # Manual timeout
+            print(f"Manual timeout triggered after {manual_timeout} seconds.")
             retries += 1
-            print(f"Manual timeout triggered after {manual_timeout} seconds")
-            
-    return None  # Default return value if all retries fail
+
+    print("All retries failed.")
+    return None
 
 def contains_whole_words(sentence, terms_to_check):
     
@@ -146,8 +156,7 @@ def count_decisions_for_sentence(analysis_type, decisions):
     elif analysis_type == "relationships_classify":
         decisions_count = {
             'causal': decisions.count('causal'),
-            'correlational': decisions.count('correlational'),
-            'none': decisions.count('none')
+            'non-causal': decisions.count('non-causal')
         }
     
     elif analysis_type == "relationships_extract":
@@ -188,7 +197,7 @@ def analyze_the_current_sentence(sentence, context_window, analysis_type, subsco
     
     decisions = []
     
-    # Classify the current sentence by tense or relationship type (causal, correlational, none)
+    # Classify the current sentence by tense or relationship type (causal, non-causal)
     if analysis_type in classification_analyses:    
         type = "tenses" if analysis_type == "tenses" else "relationships"
         for _ in range(query_count):
@@ -201,7 +210,23 @@ def analyze_the_current_sentence(sentence, context_window, analysis_type, subsco
     elif analysis_type in extraction_analyses:
         decision = get_decision_for_sentence(sentence["sentence"], context_window, analysis_type, terms_to_check)
         decisions = decision        
-    
+
+    # Extract the main idea of a cause or effect phrase
+    elif analysis_type == "noun_phrase":
+        for field in ["cause", "effect"]:
+            phrase = sentence.get(field, "")
+            full_sentence = sentence.get("sentence", "")
+            if not isinstance(phrase, str) or not phrase.strip():
+                continue
+            decision = get_decision_for_sentence(
+                {"phrase": phrase, "sentence": full_sentence},
+                 context_window,
+                 analysis_type,
+                 terms_to_check
+            )
+            if decision:
+                decisions.append(decision.strip().strip('"').strip("'"))
+
     # Detect keywords in the current sentence
     elif analysis_type == 'list_of_terms':
         decision = get_decision_for_sentence(sentence["sentence"], context_window, analysis_type, terms_to_check)
@@ -316,7 +341,7 @@ def handle_classified_sentence(sentence, analysis_type, decisions_count, subscor
             f"decisions_{analysis_type}_{terms_to_check[0]}": decisions_count,
             f"subscore_{analysis_type}_{terms_to_check[0]}": subscore
         })
-    else:
+    elif analysis_type == "relationships_extract":
         if decisions_count:
             i = 1
             data = json.loads(decisions_count)
@@ -340,7 +365,7 @@ def document_analysis(log_file, filter, subscore_basis, filter_cutoff, terms_to_
         writer.writerow(['filter', 'subscore_basis', 'filter_cutoff', 'terms_to_check'])
         writer.writerow([filter, subscore_basis, filter_cutoff, terms_to_check])
 
-def analyze_sentences(sentences, save_name, analysis_type, context_length=0, terms_to_check=[], subscore_basis=None, filter=None, filter_cutoff=0, query_count=3, directory = '.'):
+def analyze_sentences(sentences, save_name, analysis_type, context_length=0, terms_to_check=[], subscore_basis=None, filter=None, filter_cutoff=0, query_count=1, directory = '.'):
     temp_file, log_file, existing_results = initialize_files_analysis(directory, save_name, analysis_type, terms_to_check)
     start_time, end_time, start_document_id, start_sentence_id = get_start_ids(log_file)
 
@@ -527,7 +552,7 @@ def handle_concept_pair(concept_1, concept_2, query_count):
     
     return similarity
 
-def compare_concepts(project_name, file_name, query_count=3):
+def compare_concepts(project_name, file_name, query_count=1):
 
     # Compare each pair of concepts
     results_file, temp_file, log_file, matrix_df, concepts = initialize_files_comparison(directory, save_name)

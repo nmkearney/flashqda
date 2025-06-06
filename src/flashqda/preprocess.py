@@ -108,4 +108,38 @@ def preprocess_documents(save_name, custom_items=[]):
         document_id_counter += 1
 
     # Save the list of sentences as a csv file
-    save_to_csv(all_sentences, results_folder, save_name + '_sentences.csv')
+    save_to_csv(all_sentences, results_folder, save_name + '_sentences.csv') #Todo: replace
+
+import fitz  # PyMuPDF
+import os
+
+def extract_text_from_pdf(pdf_path, output_dir="data", save_name=None):
+    """
+    Extracts text from a PDF file and saves it as a .txt file.
+
+    Args:
+        pdf_path (str): Path to the PDF file.
+        output_dir (str): Directory where the .txt file will be saved (default: 'data').
+        save_name (str): Optional name for the .txt file (without extension). Defaults to PDF filename.
+
+    Returns:
+        str: Full path to the saved .txt file.
+    """
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(f"No file found at {pdf_path}")
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    doc = fitz.open(pdf_path)
+    text = "\n".join([page.get_text() for page in doc])
+
+    if save_name is None:
+        save_name = os.path.splitext(os.path.basename(pdf_path))[0]
+
+    txt_path = os.path.join(output_dir, f"{save_name}.txt")
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+    return txt_path
+

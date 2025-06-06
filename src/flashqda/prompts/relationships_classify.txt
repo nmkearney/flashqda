@@ -1,23 +1,56 @@
 Context:
 
-Here are three types of relationship: correlational, causal, and none.
+You are analyzing whether one or more causal relationships are described in a sentence.
 
-Correlational type: The statement describes the association between variables, but causation cannot be explicitly stated. Language cues include: correlated, associated, related, linked, varies.
+---
 
-Causal type: The statement says that the independent variable directly alters the dependent variable. Language cues include: increase, decrease, lead to, prevent, can.
+Causal:
+One condition or factor directly influences, enables, or determines another.  
+This includes actions, requirements, or conditions of necessity or sufficiency.
 
-None: No correlation/causation relationship is mentioned in the statement.
+Common language cues:
+- increase, decrease, lead to, prevent, can, requires, necessary, essential, depends on, results in
 
-Consider the following sentence(s), which occur before the sentence to be analyzed: {context_window}.
+Examples:
+- "A larger farm size is necessary to achieve a living income."
+- "Access to irrigation leads to higher crop yields."
+- "To achieve a living income, farmers must diversify crops."
+
+---
+
+Non-causal:  
+The sentence does **not** describe a causal relationship.  
+This includes unrelated statements, neutral descriptions, or associations without direct influence.
+
+Examples:
+- "Living income is associated with land size."
+- "Yields vary with fertilizer use."
+- "The farmer interviewed five neighbors."
+
+---
 
 Task:
 
-Read the following sentence: {sentence}.
+Consider the following sentence(s), which occur before the sentence to be analyzed:  
+{context_window}
 
-What types of relationships are described in the sentence?
+Now, read the following sentence:  
+{sentence}
+
+Does the sentence describe one or more causal relationships?
+
+---
 
 Instructions:
 
-1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
-2. Use only the following terms to describe the relationships: "correlational", "causal", or "none".
-3. The expected JSON format is: {{"relationships": {{"relationship 1": "type", "relationship 2": "type", ...}}}}.
+1. Think through the logic of the sentence step by step, but provide only the final answer as a JSON object.
+2. Use only these two terms: `causal` or `non-causal`.
+3. If the sentence expresses multiple relationships, assign one label per relationship.
+4. Respond in valid JSON using the following format:
+
+{{
+  "relationships": {{
+    "relationship 1": "causal"
+  }}
+}}
+

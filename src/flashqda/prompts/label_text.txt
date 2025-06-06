@@ -1,17 +1,32 @@
 Context:
 
-Criteria: {criteria}.
+You are labeling sentences according to a set of criteria:  
+{criteria}
 
-Consider the following text, which occurs before the text to be analyzed: {context_window}.
+---
 
 Task:
 
-Read the following text: {text}.
+Consider the following sentence(s), which occur before the sentence to be analyzed:  
+{context_window}
 
-What criteria apply to the text?
+Now, read the following sentence:  
+{sentence}
+
+Determine which of the criteria apply to the sentence.
+
+---
 
 Instructions:
 
-1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
-2. Only use the provided criteria as answers.
-3. The expected JSON format is: {{"criteria": {{"criterion 1": "criterion", "criterion 2": "criterion", ...}}}}.
+1. Think through the sentence step-by-step, but respond only with the final answer as JSON.
+2. Only use the provided criteria as possible answers.
+3. Include all criteria that apply. If none apply, return an empty list.
+4. Respond in valid JSON using the following format:
+
+{
+  "criteria": [
+    "criterion 1",
+    "criterion 2"
+  ]
+}

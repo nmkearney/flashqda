@@ -1,12 +1,12 @@
 [project]
 name = "flashqda"
-version = "1.0.6"
+version = "1.08"
 authors = [
     { name = "Norman Kearney", email = "norman.kearney@protonmail.com"},
 ]
 description = "A package for using Large Language Models for qualitative data analysis."
 readme = "README.md"
-requires-python = ">3.8"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -19,6 +19,7 @@ dependencies = [
     "pandas",
     "numpy",
     "nltk",
+    "sentence-transformers"
 ]
 
 [project.urls]
