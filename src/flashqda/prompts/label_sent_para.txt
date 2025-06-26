@@ -1,0 +1,28 @@
+Context:
+
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:  
+{context_window}
+
+---
+
+Task:
+
+Read the following {granularity}:  
+{item}
+
+Determine whether any of the following labels apply:
+{label_list}
+
+If none apply, return "none".
+
+---
+
+Instructions:
+
+1. Use only the lable names, not the description.
+2. Use only the label names listed above. Do not invent new ones.
+3. Return your answer in a JSON object, like this:
+
+{{
+  "labels": ["label 1", "label 2"]
+}}

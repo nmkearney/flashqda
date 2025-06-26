@@ -4,9 +4,10 @@ List of tenses: simple past, past perfect, past continuous, past perfect continu
 
 Task:
 
-Read the following sentence: {sentence}.
+Read the following {granularity}: 
+{item}.
 
-What tenses are used in the sentence?
+What tenses are used in the {granularity}?
 
 Instructions:
 

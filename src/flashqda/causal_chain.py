@@ -1,154 +1,115 @@
-import os
-import csv
-from collections import defaultdict
-from .embedding_utils import update_embeddings_from_data, compute_similarity_matrix, cosine_similarity
+import pandas as pd
+from flashqda.pipelines.config import PipelineConfig
+from flashqda.embedding_cache import load_embeddings
+from flashqda.log_utils import update_log
+from sklearn.metrics.pairwise import cosine_similarity
+from pathlib import Path
+import numpy as np
 
-class CausalChain:
-    def __init__(self, data_list=None, embeddings_path=None, data_path=None):
-        if data_list is not None:
-            self.data_list = data_list
-        elif data_path:
-            with open(data_path, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                self.data_list = list(reader)
-        else:
-            raise ValueError("Either data_list or data_path must be provided")
-        self.embeddings_path = embeddings_path
+def link_items(
+        project,
+        config,
+        threshold=0.85,
+        input_file=None,
+        embedding_file=None,
+        output_directory=None,
+        save_name=None
+        ):
+    """
+    Link effects to potential causes based on semantic similarity between text embeddings.
 
-        self.embeddings, self.changed_concepts = update_embeddings_from_data(self.data_list, embeddings_path)
-        self.similarity_matrix = compute_similarity_matrix(self.embeddings)
+    Compares embeddings of extracted cause-effect items to identify likely causal links 
+    using cosine similarity. Links with similarity above a specified threshold are recorded 
+    in a structured CSV file, with associated metadata for traceability.
 
-        self.step_id_counter = self._init_step_id_counter()
-        self.existing_pairs = set((entry.get("cause"), entry.get("effect")) for entry in self.data_list)
+    Args:
+        project (flashqda.ProjectContext): Project context providing file paths.
+        config (flashqda.PipelineConfig): Pipeline configuration with extract labels (e.g., ["cause", "effect"]).
+        threshold (float, optional): Cosine similarity threshold for linking items.
+            Only pairs above this value are retained. Defaults to 0.85.
+        input_file (str or Path, optional): Path to the CSV file containing extracted cause/effect items.
+            Defaults to `project.results / "extracted.csv"`.
+        embedding_file (str or Path, optional): Path to the JSON file containing item embeddings.
+            Defaults to `project.results / "embeddings.json"`.
+        output_directory (str or Path, optional): Directory to save the linked results CSV and logs.
+            Defaults to `project.results`.
+        save_name (str, optional): Filename for the output CSV file containing suggested links.
+            Defaults to `"suggested_links.csv"`.
 
-    def _init_step_id_counter(self):
-        max_id = 0
-        for entry in self.data_list:
-            if "id" in entry:
-                try:
-                    max_id = max(max_id, int(entry["id"]))
-                except ValueError:
-                    continue
-        return max_id + 1
+    Returns:
+        Path: Full path to the CSV file containing effect-cause link suggestions based on similarity.
+    """
+    input_file = Path(input_file) if input_file else (project.results / "extracted.csv")
+    embedding_file = Path(embedding_file) if embedding_file else (project.results / "embeddings.json")
+    output_directory = Path(output_directory) if output_directory else project.results
+    save_name = save_name if save_name else "suggested_links.csv"
+    output_file = output_directory / save_name
+    output_directory.mkdir(parents=True, exist_ok=True)
 
-    def suggest_causal_stitches(self, threshold=0.75, top_n=3, auto_export_path=None):
-        concepts = set()
-        for entry in self.data_list:
-            if entry.get("cause"):
-                concepts.add(entry["cause"].strip())
-            if entry.get("effect"):
-                concepts.add(entry["effect"].strip())
+    log_directory = output_directory / "logs"
+    log_directory.mkdir(exist_ok=True)
+    log_file = log_directory / f"{Path(save_name).stem}.log"
 
-        concept_list = list(concepts)
-        similarities = []
+    items = pd.read_csv(input_file)
+    embeddings = load_embeddings(embedding_file)
 
-        for i, c1 in enumerate(concept_list):
-            for j, c2 in enumerate(concept_list):
-                if i >= j:
-                    continue
-                e1 = self.embeddings.get(f"cause::{c1}") or self.embeddings.get(f"effect::{c1}")
-                e2 = self.embeddings.get(f"cause::{c2}") or self.embeddings.get(f"effect::{c2}")
-                if not e1 or not e2:
-                    continue
-                sim = cosine_similarity(e1["embedding"], e2["embedding"])
-                if sim >= threshold:
-                    similarities.append((c1, c2, sim))
+    cause_label, effect_label = config.extract_labels
+    items = items.dropna(subset=[cause_label, effect_label])
 
-        # dedupe: for each concept, keep top_n matches
-        match_map = defaultdict(list)
-        for c1, c2, sim in similarities:
-            match_map[c1].append((c2, sim))
-            match_map[c2].append((c1, sim))
+    # Get unique causes/effects with available embeddings
+    causes = items[cause_label].unique().tolist()
+    effects = items[effect_label].unique().tolist()
 
-        deduped_matches = set()
-        for c, matches in match_map.items():
-            top_matches = sorted(matches, key=lambda x: -x[1])[:top_n]
-            for m, score in top_matches:
-                pair = tuple(sorted([c, m]))
-                deduped_matches.add((pair[0], pair[1], score))
+    cause_texts = [c for c in causes if c in embeddings]
+    effect_texts = [e for e in effects if e in embeddings]
 
-        # now identify rows using these stitched concepts
-        suggestions = []
-        suggestion_id = 1
-        for cause1, cause2, score in deduped_matches:
-            rows1 = [r for r in self.data_list if r.get("effect") == cause1]
-            rows2 = [r for r in self.data_list if r.get("cause") == cause2]
-            for r1 in rows1:
-                for r2 in rows2:
-                    if r1 is r2:
-                        continue
-                    suggestions.append({
-                        "suggestion_id": suggestion_id,
-                        "from_id": f"{r1.get('document_id', '')}_{r1.get('sentence_id', '')}_{r1.get('relationship_id', r1.get('id', ''))}",
-                        "from_sentence": r1.get("sentence", ""),
-                        "from_cause": r1.get("cause", ""),
-                        "from_effect": r1.get("effect", ""),
-                        "to_id": f"{r2.get('document_id', '')}_{r2.get('sentence_id', '')}_{r2.get('relationship_id', r2.get('id', ''))}",
-                        "to_sentence": r2.get("sentence", ""),
-                        "to_cause": r2.get("cause", ""),
-                        "to_effect": r2.get("effect", ""),
-                        "similarity": score,
-                        "accepted": "",
-                        "analyst_comment": "",
-                        "status": "valid"
-                    })
-                    suggestion_id += 1
+    cause_vectors = np.array([embeddings[c] for c in cause_texts])
+    effect_vectors = np.array([embeddings[e] for e in effect_texts])
 
-            if auto_export_path:
-                self.export_suggestions_csv(suggestions, auto_export_path)
+    similarities = cosine_similarity(effect_vectors, cause_vectors)
 
-        return suggestions
+    # Build metadata index
+    effect_meta = items.groupby(effect_label).first().to_dict(orient="index")
+    cause_meta = items.groupby(cause_label).first().to_dict(orient="index")
 
-    def validate(self, suggestions, add_new=True):
-        updated_suggestions = []
-        current_ids = {str(row.get("id")) for row in self.data_list if row.get("id")}
-        row_lookup = {str(row.get("id")): row for row in self.data_list if row.get("id")}
-        for s in suggestions:
-            from_id = str(s.get("from_id"))
-            to_id = str(s.get("to_id"))
-            from_row = row_lookup.get(from_id)
-            to_row = row_lookup.get(to_id)
-            if not from_row or not to_row:
-                s["status"] = "broken"
-            elif (from_row.get("cause") != s.get("from_cause") or from_row.get("effect") != s.get("from_effect") or
-                  to_row.get("cause") != s.get("to_cause") or to_row.get("effect") != s.get("to_effect")):
-                s["status"] = "stale"
-            else:
-                s["status"] = "valid"
-            updated_suggestions.append(s)
+    rows = []
+    for i, effect in enumerate(effect_texts):
+        sim_scores = similarities[i]
+        for j, score in enumerate(sim_scores):
+            if score < threshold:
+                continue
 
-        if add_new:
-            fresh = self.suggest_causal_stitches()
-            existing_keys = {(s["from_id"], s["to_id"]) for s in updated_suggestions}
-            for s in fresh:
-                key = (s["from_id"], s["to_id"])
-                if key not in existing_keys:
-                    updated_suggestions.append(s)
+            cause = cause_texts[j]
+            from_meta = effect_meta.get(effect, {})
+            to_meta = cause_meta.get(cause, {})
 
-        return updated_suggestions
+            if effect == cause:
+                continue  # skip tautologies
 
-    def validate_from_file(self, input_path, output_path, add_new=True):
-        with open(input_path, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            suggestions = list(reader)
+            # Optionally, skip same-sentence links too:
+            if from_meta.get("sentence_id") == to_meta.get("sentence_id") and \
+            from_meta.get("document_id") == to_meta.get("document_id"):
+                continue
 
-        updated_suggestions = self.validate(suggestions, add_new=add_new)
-        self.export_suggestions_csv(updated_suggestions, output_path)
+            rows.append({
+                "from_effect_sentence": from_meta.get("sentence", ""),
+                "from_cause": from_meta.get("cause", ""),
+                "from_effect": effect,
+                "to_cause": cause,
+                "to_effect": to_meta.get("effect", ""),
+                "to_cause_sentence": to_meta.get("sentence", ""),
+                "similarity": score,
+                "from_effect_document_id": from_meta.get("document_id", ""),
+                "from_effect_filename": from_meta.get("filename", ""),
+                "from_effect_sentence_id": from_meta.get("sentence_id", ""),
+                "to_cause_document_id": to_meta.get("document_id", ""),
+                "to_cause_filename": to_meta.get("filename", ""),
+                "to_cause_sentence_id": to_meta.get("sentence_id", "")
+            })
 
-    
-    def export_suggestions_csv(self, suggestions, output_path):
-        fieldnames = [
-            "suggestion_id", "from_sentence", "from_cause", "from_effect",
-            "to_cause", "to_effect", "to_sentence",
-            "from_id", "to_id", "similarity", "accepted", "analyst_comment", "status"
-        ]
-        with open(output_path, 'w', encoding='utf-8', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            for suggestion in suggestions:
-                writer.writerow(suggestion)
+            update_log(log_file, f"Linked '{effect}' -> '{cause}' ({score:.2f})")
 
-    def export_data(self, output_path):
-        import json
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(self.data_list, f, indent=2, ensure_ascii=False)
+    pd.DataFrame(rows).to_csv(output_file, index=False)
+    num_docs = items["document_id"].nunique()
+    print(f"Linked items by semantic similarity in {num_docs} documents.")
+    return output_file

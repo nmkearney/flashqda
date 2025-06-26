@@ -1,145 +1,75 @@
-from .general import save_to_csv, read_csv_file
+## preprocess.py
+
+import pandas as pd
+from flashqda.text_utils import segment_sentences, segment_paragraphs
+from flashqda.document_io import get_documents
 from tqdm import tqdm
-import re, os, nltk
-nltk.download('punkt_tab')
+import re, os
 
-def segment_document(document_text, custom_items):
+def preprocess_documents(
+        project, 
+        granularity=None,
+        custom_items=[],
+        save_name=None
+        ):
     """
-    Segment .txt documents into sentences.
-    """
+    Segment .txt documents into paragraphs or sentences and save them in a csv file.
+     
+    The output file will include a document_id for each document, the filename of each document, an item_id for each item, and the items.
 
-    # Replace non-breaking spaces with regular spaces
-    document_text = document_text.replace("\u00A0", " ")
-
-    # Replace 'e. ' and 'i. ' with 'e.' and 'i.' respectively
-    document_text = re.sub(r'\b(e\.)\s+(?=\S)', r'\1', document_text)
-    document_text = re.sub(r'\b(i\.)\s+(?=\S)', r'\1', document_text)
-
-    # Search for instances of items and check for comma after instance; if no comma, add one
-    items_to_check = ['E.g.', 'e.g.', 'i.e.', 'et al.', 'Fig.', 'fig.', 'Figs.', 'ca.', 'c.', 'Eq.', 'eq.', 'approx.', 'Mr.', 'Ms.', 'Mrs.', 'Dr.'] + custom_items
-    for item in items_to_check:
-        document_text = re.sub(r'({0})(?![,])'.format(re.escape(item)), r'\1,', document_text)
-
-    # Use regex to extract sentences that start with a capital letter and end with a valid sentence ending
-    sentence_pattern = r'([A-Z].*?[.!?]["\'\)\]]?(?:\s|$))'
-    # [A-Z] Match an uppercase letter (start of a sentence)
-    # .*? Match any characters (non-greedy)
-    # [``.!?] Match a valid sentence-ending punctuation (period, exclamation point, or question mark)
-    # ["\'\)\]]? Match optional quotation mark or bracket
-    # (?:\s|$) Match a whitespace character or end of line
-    extracted_sentences = re.findall(sentence_pattern, document_text)
-
-    # Exclude sentences that contain carriage returns
-    extracted_sentences = [sentence for sentence in extracted_sentences if '\r' not in sentence]
+    Args:
+        project (flashqda.ProjectContext): A Project object representing document(s) to process.
+        granularity (str, optional): Segmentation level. Options are "sentence" and "paragraph". 
+            Defaults to "sentence".
+        custom_items (str or list of str, optional): Custom strings containing punctuation that should not be treated as sentence boundaries (e.g., abbreviations). 
+            For multiple items, use a list of quoted strings, e.g., ["i.tem", "it.em"].
+        save_name (str, optional): Name for csv file that stores the segmented items.
+            Defaults to "sentences.csv" or "paragraphs.csv".
     
-    # Join the extracted sentences to form the preprocessed article
-    segmented_document = ''.join(extracted_sentences)
-    
-    return segmented_document
-
-def get_documents():
-    """
-    Collect .txt documents from the data folder.
-
+    Returns:
+        None: The function writes a CSV file to disk and returns nothing.
     """
 
-    documents = [] # Clears the document list
-    
-    # Get a list of all .txt files in the folder
-    txt_files = [f for f in os.listdir('Data') if f.endswith(".txt")]
+    granularity = granularity if granularity in ("sentence", "paragraph") else "sentence"
+    save_name = save_name if save_name else f"{granularity}.csv"
 
-    for txt_file in txt_files:
-        filename = txt_file
-        txt_path = os.path.join('Data', txt_file)
-
-        # Read text from the txt file
-        with open(txt_path, mode = 'r', encoding='utf-8') as txt_file:
-            text = txt_file.read()
-
-        document = {
-            "filename": filename,
-            "text": text
-        }
-        documents.append(document)
-
-    return documents
-
-def preprocess_documents(save_name, custom_items=[]):
-    """
-    Segment .txt documents into sentences and save the sentences in a csv file with the filename,
-    a filename ID, the sentence, and a sentence ID.
-
-    param save_name: Name for csv file that stores the segmented sentences
-    """
-    #Creates results folder if does not already exist
-    results_folder = os.path.join('Results', save_name)
-    log_folder = os.path.join(results_folder, 'log')
-    temp_folder = os.path.join(results_folder, 'temp')
-    if not os.path.exists(log_folder):
-        os.makedirs(results_folder)
-        os.makedirs(log_folder)
-        os.makedirs(temp_folder)
-
-    all_sentences = [] # Clears the all_sentences list
+    all_items = [] # Clears the all_items list
     document_id_counter = 1  # Initialize a document ID counter outside the loop
     
-    documents = get_documents()
+    documents = get_documents(project)
+
+    updated_count = 0
 
     # Loop through the documents
     for document in tqdm(documents):
-        sentence_id_counter = 0  # Initialize a sentence ID counter
+        item_id_counter = 0  # Initialize an item ID counter
         filename = document["filename"]
         text = document["text"]
-        segmented_document = segment_document(text, custom_items)
-        sentences = nltk.sent_tokenize(segmented_document) # Extract the sentences from the segmented document
+        
+        if granularity == "sentence":
+            segmented_document = segment_sentences(text, custom_items)
+            items = segmented_document # Extract the sentences from the segmented document
+        else:
+            segmented_document = segment_paragraphs(text)
+            items = segmented_document
         
         # Extend the all_sentences list with document ID, sentence ID, filename, and sentence
-        all_sentences.extend([{
+        all_items.extend([{
             "document_id": document_id_counter,
             "filename": filename,
-            "sentence_id": sentence_id_counter + idx,
-            "sentence": sentence
-        } for idx, sentence in enumerate(sentences, start=1)])
+            f"{granularity}_id": item_id_counter + idx,
+            f"{granularity}": item
+        } for idx, item in enumerate(items, start=1)])
         
         # Increment the sentence ID counter for the next document
-        sentence_id_counter += len(sentences)
+        item_id_counter += len(items)
+        updated_count += item_id_counter
 
         # Increment the document ID counter for the next document
         document_id_counter += 1
 
     # Save the list of sentences as a csv file
-    save_to_csv(all_sentences, results_folder, save_name + '_sentences.csv') #Todo: replace
+    project.save_data(pd.DataFrame(all_items), save_name)
 
-import fitz  # PyMuPDF
-import os
-
-def extract_text_from_pdf(pdf_path, output_dir="data", save_name=None):
-    """
-    Extracts text from a PDF file and saves it as a .txt file.
-
-    Args:
-        pdf_path (str): Path to the PDF file.
-        output_dir (str): Directory where the .txt file will be saved (default: 'data').
-        save_name (str): Optional name for the .txt file (without extension). Defaults to PDF filename.
-
-    Returns:
-        str: Full path to the saved .txt file.
-    """
-    if not os.path.exists(pdf_path):
-        raise FileNotFoundError(f"No file found at {pdf_path}")
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    doc = fitz.open(pdf_path)
-    text = "\n".join([page.get_text() for page in doc])
-
-    if save_name is None:
-        save_name = os.path.splitext(os.path.basename(pdf_path))[0]
-
-    txt_path = os.path.join(output_dir, f"{save_name}.txt")
-    with open(txt_path, "w", encoding="utf-8") as f:
-        f.write(text)
-
-    return txt_path
-
+    num_docs = document_id_counter - 1
+    print(f"Segmented {updated_count} {granularity}s in {num_docs} documents.")

@@ -1,22 +1,22 @@
 Context:
 
-Consider the following sentence(s), which occur before the sentence to be analyzed:
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
 {context_window}
 
 Task:
 
-Read the following sentence:
-{sentence}
+Read the following {granularity}:
+{item}
 
-Identify any causal relationships expressed in the sentence. For each one, extract a clear and meaningful version of both the cause and effect.
+Identify any causal relationships expressed in the {granularity}. For each one, extract a clear and meaningful version of both the cause and effect.
 
 Instructions:
 
-1. Think through the sentence step-by-step, but respond with only the final answer as JSON.
+1. Think through the {granularity} step-by-step, but respond with only the final answer as JSON.
 2. Identify each cause — the condition or factor that enables or produces something.
 3. Identify each effect — the result or consequence that logically follows from the cause.
-4. Consider both directions (A → B and B → A) and choose the one that best reflects the meaning of the sentence.
-5. Refine both the cause and the effect to express the core idea clearly. Compare each phrase to the original sentence and adjust as needed for accuracy.
+4. Consider both directions (A → B and B → A) and choose the one that best reflects the meaning of the {granularity}.
+5. Refine both the cause and the effect to express the core idea clearly. Compare each phrase to the original {granularity} and adjust as needed for accuracy.
 - Prefer concise noun phrases (3–10 words), unless a verb phrase better expresses the meaning.
 - Preserve important modifiers, quantities, or qualifiers (e.g., numbers, timeframes, degrees).
 - Avoid full sentences and unnecessary punctuation.
