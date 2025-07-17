@@ -456,18 +456,14 @@ def extract_from_classified(
             if str(items.iloc[j].get("document_id", "unknown")) == doc_id
         ]
 
-        # Prepare base row
-        result_row = {
-            "document_id": doc_id,
-            "filename": filename,
-            f"{granularity}_id": row_id,
-            f"{granularity}": row[f"{granularity}"],
-            "classification": row["classification"],
-        }
+        # Start with all columns from the original row
+        result_row = row.to_dict()
 
-        # Optionally include the filter column if specified and present in the row
-        if filter_column and filter_column in row:
-                result_row[filter_column] = row.get(filter_column, "")
+        # Normalize ID fields
+        result_row["document_id"] = doc_id
+        result_row["filename"] = filename
+        result_row[f"{granularity}_id"] = row_id
+
 
         if row["classification"] == include_class: # Include items of the chosen type (e.g., "causal")
             filter_val = str(row.get(filter_column, "")).strip().lower()
@@ -499,16 +495,19 @@ def extract_from_classified(
                     write_header = False
                     pair_id += 1
                 updated_count += 1
+                update_log(log_file, f"Processed {granularity} {row_id} in document {doc_id}: {relationships}")
             else:
                 # Append causal row with filters with empty extractions
                 for label in config.extract_labels:
                     result_row[label] = ""
+                result_row["pair_id"] = ""
                 pd.DataFrame([result_row]).to_csv(output_file, mode='a', index=False, header=write_header)
                 write_header = False
         else:
             # Append non-causal row with empty extractions
             for label in config.extract_labels:
                 result_row[label] = ""
+            result_row["pair_id"] = ""
             pd.DataFrame([result_row]).to_csv(output_file, mode='a', index=False, header=write_header)
             write_header = False
 
@@ -516,8 +515,6 @@ def extract_from_classified(
 
         with open(checkpoint_file, "w") as f:
             json.dump(processed, f)
-
-        update_log(log_file, f"Processed {granularity} {row_id} in document {doc_id}: {relationships}")
 
     num_docs = items["document_id"].nunique()
     print(f"Extracted from {updated_count} items in {num_docs} documents.")

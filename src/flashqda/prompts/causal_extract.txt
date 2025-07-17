@@ -12,7 +12,7 @@ Identify any causal relationships expressed in the {granularity}. For each one, 
 
 Instructions:
 
-1. Think through the {granularity} step-by-step, but respond with only the final answer as JSON.
+1. Internally reason step by step through the {granularity}, but respond with only the final answer as JSON.
 2. Identify each cause — the condition or factor that enables or produces something.
 3. Identify each effect — the result or consequence that logically follows from the cause.
 4. Consider both directions (A → B and B → A) and choose the one that best reflects the meaning of the {granularity}.

@@ -43,7 +43,7 @@ Does the {granularity} describe any causal relationships?
 
 Instructions:
 
-1. Think through the logic of the {granularity} step by step, but provide only the final answer as a JSON object.
+1. Internally reason step by step through the logic of the {granularity}, but provide only the final label as a JSON object.
 2. Use only one of these terms: `causal` or `non-causal`.
 3. Respond in valid JSON using the following format:
 

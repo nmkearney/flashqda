@@ -34,4 +34,4 @@ def segment_sentences(document_text, custom_items):
 
 def segment_paragraphs(text):
     # Split by double newlines or other paragraph markers
-    return [p.strip() for p in text.split("\n\n") if p.strip()]
+    return [p.strip() for p in text.split("\n") if p.strip()]

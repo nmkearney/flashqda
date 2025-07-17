@@ -1,6 +1,7 @@
 # embedding_cache.py
 import os
 import json
+import tempfile
 from tqdm import tqdm
 from .embedding_core import _concept_key, compute_embedding
 
@@ -11,8 +12,10 @@ def load_embeddings(path):
     return {}
 
 def save_embeddings(embeddings, path):
-    with open(path, 'w', encoding='utf-8') as f:
+    temp_path = str(path) + ".tmp"
+    with open(temp_path, 'w', encoding='utf-8') as f:
         json.dump(embeddings, f, indent=2)
+    os.replace(temp_path, path)
 
 def update_embeddings_from_data(data_list, embeddings_path, concept_types=["cause", "effect"], model=None):
     existing = load_embeddings(embeddings_path)

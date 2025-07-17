@@ -17,26 +17,7 @@ def embed_items(
         ):
     """
     Generate and save embeddings for extracted text items (e.g., causes, effects).
-
-    Reads a CSV of extracted items and computes embeddings for specified text columns.
-    Embeddings are saved to a JSON file for reuse. Supports incremental updates by 
-    skipping already embedded items and logs progress to a project-aware location.
-
-    Args:
-        project (flashqda.ProjectContext): Project context providing result paths.
-        config (flashqda.PipelineConfig, optional): Configuration containing extractable labels 
-            (used as default `column_names` if none are provided).
-        column_names (list of str, optional): Columns to embed. If not specified, defaults to 
-            `config.extract_labels`.
-        input_file (str or Path, optional): Path to CSV file with extracted items.
-            Defaults to `project.results / "extracted.csv"`.
-        output_directory (str or Path, optional): Directory to save the embeddings file and logs.
-            Defaults to `project.results`.
-        save_name (str, optional): Name of the JSON file to store embeddings.
-            Defaults to `"embeddings.json"`.
-
-    Returns:
-        Path: Full path to the saved JSON file containing text embeddings.
+    Supports resume after interruption and avoids recomputation of existing items.
     """
 
     input_file = Path(input_file) if input_file else (project.results / "extracted.csv")
@@ -51,15 +32,34 @@ def embed_items(
 
     items = pd.read_csv(input_file)
     if not column_names:
-        column_names = config.extract_labels  # e.g., ["cause", "effect"]
+        column_names = config.extract_labels
 
     embeddings = load_embeddings(output_file)
+
+    # Collect current valid items from the CSV
+    valid_items = set()
+    for label in column_names:
+        if label in items.columns:
+            valid_items.update(
+                str(row[label]).strip()
+                for _, row in items.iterrows()
+                if pd.notna(row[label]) and str(row[label]).strip()
+            )
+
+    # Prune outdated embeddings
+    original_keys = set(embeddings.keys())
+    removed = original_keys - valid_items
+    if removed:
+        for key in removed:
+            del embeddings[key]
+        update_log(log_file, f"Removed {len(removed)} outdated embeddings.")
 
     for label in column_names:
         if label not in items.columns:
             continue
+
+        new_embeddings = {}
         for _, row in tqdm(items.iterrows(), total=len(items), desc=f"Embedding {label}s"):
-            item = str(row[label]).strip()
             if pd.isna(row[label]):
                 continue
             item = str(row[label]).strip()
@@ -67,11 +67,13 @@ def embed_items(
                 continue
 
             emb = compute_embedding(item)
-            embeddings[item] = emb
-            save_embeddings(embeddings, output_file)
+            new_embeddings[item] = emb
             update_log(log_file, f"Embedded {label}: {item}")
 
-    save_embeddings(embeddings, output_file)
-    num_docs = items["document_id"].nunique()
+        # Update and save after each label
+        embeddings.update(new_embeddings)
+        save_embeddings(embeddings, output_file)
+
+    num_docs = items["document_id"].nunique() if "document_id" in items.columns else "unknown"
     print(f"Embedded items from {num_docs} documents.")
     return output_file

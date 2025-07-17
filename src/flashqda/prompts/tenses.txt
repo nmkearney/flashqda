@@ -11,6 +11,6 @@ What tenses are used in the {granularity}?
 
 Instructions:
 
-1. Think through the problem step-by-step, but provide only the final answer as a JSON object.
+1. Internally reason step by step through the problem, but provide only the final answer as a JSON object.
 2. Only use the provided tenses as answers.
 3. The expected JSON format is: {{"tenses": {{"tense 1": "tense", "tense 2": "tense", ...}}}}.
