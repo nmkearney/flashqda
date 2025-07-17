@@ -31,7 +31,7 @@ def get_openai_api_key(api_key_filename="openai_api_key.txt", project_root=None)
 
 import openai
 import time
-from openai.error import OpenAIError
+from openai import OpenAIError
 
 def send_to_openai(
     system_prompt,
