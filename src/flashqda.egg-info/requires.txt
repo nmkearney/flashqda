@@ -1,0 +1,7 @@
+requests
+tqdm
+openai
+pandas
+numpy
+nltk
+sentence-transformers
