@@ -184,6 +184,7 @@ def label_items(
         context_length=1,
         include_class=None, 
         label_list=None,
+        on_classified = False,
         on_extracted = False,
         expand=False,
         input_file=None, 
@@ -286,7 +287,7 @@ def label_items(
             if doc_id in processed and row_id in processed[doc_id]:
                 continue
 
-        if granularity != "abstract":
+        if on_classified:
             if row["classification"] != include_class:
                 continue
 

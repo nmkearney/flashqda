@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: flashqda
-Version: 1.1.2
+Version: 1.1.3
 Summary: A package for using Large Language Models for qualitative data analysis.
 Author-email: Norman Kearney <norman.kearney@protonmail.com>
 Project-URL: Homepage, https://github.com/nmkearney/flashqda
