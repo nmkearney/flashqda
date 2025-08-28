@@ -208,6 +208,7 @@ def label_items(
             include_class (str, optional): Only items with this classification label will be considered for labeling.
                 Defaults to the first label in `config.labels`.
             label_list (list of str, optional): List of labels to apply to items.
+            on_classified (bool, optional): If True, applies labelling to classified item pairs.
             on_extracted (bool, optional): If True, applies labeling to extracted item pairs using 
                 pair metadata (i.e., original sentence or paragraph). Defaults to False.
             expand (bool, optional): If True, adds one-hot encoded columns for each unique label.
@@ -286,7 +287,7 @@ def label_items(
         else:
             if doc_id in processed and row_id in processed[doc_id]:
                 continue
-
+        
         if on_classified:
             if row["classification"] != include_class:
                 continue
@@ -304,7 +305,17 @@ def label_items(
         ]
 
         if on_extracted:
-            pair_text = f"Cause: {row.get('cause', '')}\nEffect: {row.get('effect', '')}"
+
+            first_part, second_part = config.extract_labels  # e.g. ["gain", "cost"]
+
+            first_val = str(row.get(first_part) or "").strip().lower()
+            second_val = str(row.get(second_part) or "").strip().lower()
+
+            if not first_val or first_val == "nan":  # require first_part at least
+                continue
+
+            pair_text = f"{first_part.capitalize()}: {first_val}\n{second_part.capitalize()}: {second_val}"
+
             labels = handle_labelling(
                 granularity=granularity,
                 item=row[f"{granularity}"],
