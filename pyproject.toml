@@ -19,7 +19,7 @@ dependencies = [
     "pandas",
     "numpy>=1.26,<2",
     "nltk",
-    "sentence-transformers=3.3.1",
+    "sentence-transformers==3.3.1",
     "accelerate==1.0.1"
 ]
 
