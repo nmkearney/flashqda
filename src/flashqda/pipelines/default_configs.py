@@ -11,6 +11,9 @@ PIPELINE_CONFIGS = {
             "label_extracted": "label_extracted.txt",
             "extract": "causal_extract.txt",
         },
-        "system_prompt": "You are helping identify causal relationships. Respond using JSON."
+        "system_prompt": "You are helping identify causal relationships. Respond using JSON.",
+        "provider": "openai",
+        "model": "gpt-4o",
+        "base_url":None,
     }
 }

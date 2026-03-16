@@ -3,23 +3,28 @@ import pandas as pd
 from flashqda.prompt_loader import load_formatted_prompt
 from flashqda.log_utils import update_log
 from flashqda.pipelines.config import PipelineConfig
-from flashqda.openai_utils import send_to_openai
+from flashqda.llm_utils import send_to_llm, extract_json_from_text
 from tqdm.notebook import tqdm
 import json
 
+def _pair_key(row_id, pair_id):
+    return f"{int(row_id)}::{int(pair_id)}"
+
 def handle_classification(granularity, item, context_window, prompt, config):
-    filled_prompt = prompt.format(granularity=granularity,
-                                  context_window="\n".join(context_window), 
-                                  item=item
-                                  )
-    response_text = send_to_openai(
+    filled_prompt = prompt.format(
+        granularity=granularity,
+        context_window="\n".join(context_window), 
+        item=item
+        )
+    response_text = send_to_llm(
         system_prompt=config.system_prompt,
         user_prompt=filled_prompt,
+        config=config,
         response_format={"type": "json_object"}
     )
 
     try:
-        response = json.loads(response_text)
+        response = extract_json_from_text(response_text)
         label = response.get("label")
         if label is None:
             print(f"[Warning] No 'label' found in response {response}")
@@ -29,24 +34,39 @@ def handle_classification(granularity, item, context_window, prompt, config):
         print(f"Failed to parse response as JSON: {response_text}")
         return "unknown"
 
-def handle_labelling(granularity, item, context_window, prompt, label_list, config, pair=None):
+def handle_labelling(granularity, item, context_window, prompt, label_list, config, pair=None, return_reasoning=False):
     filled_prompt = prompt.format(
         granularity=granularity,
         context_window="\n".join(context_window), 
         item=item, 
         label_list=label_list,
-        pair=pair or "")
-    response_text = send_to_openai(
+        pair=pair or "",
+        return_reasoning = str(bool(return_reasoning)))
+    response_text = send_to_llm(
         system_prompt=config.system_prompt,
         user_prompt=filled_prompt,
+        config=config,
         response_format={"type": "json_object"}
     )
 
     try:
-        response = json.loads(response_text)
-        return response.get("labels", [])
+        response = extract_json_from_text(response_text)
+        labels = response.get("labels", [])
+        reasoning = response.get("reasoning", "")
+
+        if isinstance(reasoning, dict):
+            # join into a single string for CSV, but keep dict if you want structure
+            flat_reasoning = " | ".join(f"{k}: {v}" for k, v in reasoning.items())
+        elif isinstance(reasoning, list):
+            flat_reasoning = " ".join(str(x) for x in reasoning)
+        else:
+            flat_reasoning = str(reasoning or "")
+        return (labels, flat_reasoning) if return_reasoning else labels
+
     except Exception as e:
         print(f"Failed to parse filter label response: {response_text}")
+        if return_reasoning:
+            return [], ""
         return []
 
 def handle_extraction(granularity, item, context_window, prompt, config):
@@ -55,13 +75,25 @@ def handle_extraction(granularity, item, context_window, prompt, config):
         context_window="\n".join(context_window), 
         item=item
         )
-    response_text = send_to_openai(
+    response_text = send_to_llm(
         system_prompt=config.system_prompt,
         user_prompt=filled_prompt,
+        config=config,
         response_format={"type": "json_object"}
     )
     try:
-        return json.loads(response_text)
+        response = extract_json_from_text(response_text)
+
+        # Defensive normalization
+        if not isinstance(response, dict):
+            return {"relationships": [{}]}
+        
+        relationships = response.get("relationships", [{}])
+        if not isinstance(relationships, list):
+            relationships = [{}]
+
+        return {"relationships": relationships}
+    
     except Exception as e:
         print(f"Failed to parse extraction response: {response_text}")
         return {"relationships": [{}]}
@@ -182,20 +214,22 @@ def label_items(
         config=None,
         granularity=None,
         context_length=1,
+        label_column="classification",
         include_class=None, 
         label_list=None,
         on_classified = False,
         on_extracted = False,
         expand=False,
+        capture_reasoning=False,
         input_file=None, 
         output_directory=None,
         save_name=None
         ):
 
     """
-        Label classified items (sentences, paragraphs, or abstracts) with one or more filter tags.
+        Label items (sentences, paragraphs, or abstracts) with one or more filter tags.
 
-        Reads a classified CSV file, applies a prompt-based labeling step using the specified pipeline, 
+        Reads a CSV file, applies a prompt-based labeling step using the specified pipeline, 
         and writes updated labels to a new CSV file. Supports contextual labeling, checkpointing, 
         and optional label column expansion for easier postprocessing.
 
@@ -205,6 +239,7 @@ def label_items(
             granularity (str, optional): Unit of labeling. Options: "sentence", "paragraph", or "abstract".
                 Defaults to "sentence".
             context_length (int, optional): Number of previous items to include as context. Defaults to 1.
+            label_column (str, optional): Column containing classification labels.
             include_class (str, optional): Only items with this classification label will be considered for labeling.
                 Defaults to the first label in `config.labels`.
             label_list (list of str, optional): List of labels to apply to items.
@@ -213,6 +248,7 @@ def label_items(
                 pair metadata (i.e., original sentence or paragraph). Defaults to False.
             expand (bool, optional): If True, adds one-hot encoded columns for each unique label.
                 Defaults to False.
+            capture_reasoning (bool, optional): If True, captures the reasoning used by the LLM to assign the labels.
             input_file (str or Path, optional): Path to input CSV. Defaults to 
                 `project.results / "classified.csv"`.
             output_directory (str or Path, optional): Directory where output is saved. Defaults to `project.results`.
@@ -226,13 +262,14 @@ def label_items(
     granularity = granularity if granularity in ("sentence", "paragraph", "abstract") else "sentence"
     input_file = input_file if input_file else (project.results / "classified.csv")
     output_directory = Path(output_directory) if output_directory else project.results
-    save_name = save_name if save_name else (project.results / "labelled.csv")
+    save_name = save_name if save_name else "labelled.csv"
     output_file = output_directory / save_name
     output_directory.mkdir(parents=True, exist_ok=True)
     include_class = include_class if include_class else config.labels[0]
 
     items = pd.read_csv(input_file)
     items.columns = [col.lower() for col in items.columns]
+    label_column = (label_column or "classification").lower()
 
     if granularity == "abstract":
         items["document_id"] = items.index + 1
@@ -242,6 +279,12 @@ def label_items(
     filter_col = f"filter_labels_{Path(save_name).stem}"
     if filter_col not in items.columns:
         items[filter_col] = ""
+
+    # Add reasoning column only if requested
+    if capture_reasoning:
+        reasoning_col_name = f"labels_reasoning_{Path(save_name).stem}"
+        if reasoning_col_name not in items.columns:
+            items[reasoning_col_name] = ""
 
     # Setup paths
     log_path = output_directory / "logs"
@@ -262,11 +305,13 @@ def label_items(
         processed = {}
 
     if granularity == "abstract":
-        prompt_file = config.prompt_files["label_abstract"]
-    elif granularity == "pair":
-        prompt_file = config.prompt_files["label_extracted"]
+        key = "label_abstract_reasoning" if capture_reasoning else "label_abstract"
+    elif on_extracted:
+        key = "label_extracted_reasoning" if capture_reasoning else "label_extracted"
     else:
-        prompt_file = config.prompt_files["label_sent_para"]
+        key = "label_sent_para_reasoning" if capture_reasoning else "label_sent_para"
+ 
+    prompt_file = config.prompt_files[key]
     prompt = load_formatted_prompt(prompt_file, project=project)
 
     updated_count = 0
@@ -282,19 +327,18 @@ def label_items(
             pair_id = None
 
         if on_extracted:
-            if doc_id in processed and (row_id, pair_id) in processed[doc_id]:
+            pair_key = _pair_key(row_id, pair_id)
+            if doc_id in processed and pair_key in processed[doc_id]:
                 continue
         else:
             if doc_id in processed and row_id in processed[doc_id]:
                 continue
         
         if on_classified:
-            if row["classification"] != include_class:
+            classification = str(row[f"{label_column}"]).strip().lower()
+            target = str(include_class).strip().lower()
+            if classification != target:
                 continue
-
-        # Skip if filter_labels already exist
-        if isinstance(row[filter_col], str) and row[filter_col].strip():
-            continue
 
         # Rebuild context window from previous N items in same document
         start = max(i - context_length, 0)
@@ -303,6 +347,13 @@ def label_items(
             for j in range(start, i)
             if str(items.iloc[j].get("document_id", "unknown")) == doc_id
         ]
+
+        # Backfill logic: if labels exists but we're newly capturing reasoning, allow pass-through
+        labels_exist = isinstance(row[filter_col], str) and row[filter_col].strip()
+        need_reasoning_backfill = capture_reasoning and (not str(row.get(reasoning_col_name, "")).strip())
+
+        if labels_exist and not need_reasoning_backfill:
+            continue
 
         if on_extracted:
 
@@ -316,6 +367,22 @@ def label_items(
 
             pair_text = f"{first_part.capitalize()}: {first_val}\n{second_part.capitalize()}: {second_val}"
 
+        else:
+            pair_text = ""
+
+        # Call model once
+        if capture_reasoning:
+            labels, reasoning = handle_labelling(
+                granularity=granularity,
+                item=row[f"{granularity}"],
+                context_window=context_window,
+                prompt=prompt,
+                label_list=label_list,
+                config=config,
+                pair=pair_text,
+                return_reasoning=True
+            )
+        else:
             labels = handle_labelling(
                 granularity=granularity,
                 item=row[f"{granularity}"],
@@ -325,32 +392,35 @@ def label_items(
                 config=config,
                 pair=pair_text
             )
+            reasoning = ""
+
+        # If we're only backfilling reasoning, keep existing labels
+        if labels_exist and need_reasoning_backfill:
+            items.at[i, reasoning_col_name] = str(reasoning or "").strip()
         else:
-            labels = handle_labelling(
-                granularity=granularity,
-                item=row[f"{granularity}"],
-                context_window=context_window,
-                prompt=prompt,
-                label_list=label_list,
-                config=config
-            )
-        raw_labels = [label.strip() for label in labels if label.strip()]
-        items.at[i, filter_col] = ", ".join(raw_labels)
+            raw_labels = [label.strip() for label in labels if label.strip()]
+            items.at[i, filter_col] = ", ".join(raw_labels)
+            if capture_reasoning:
+                items.at[i, reasoning_col_name] = str(reasoning or "").strip()
+
         items.to_csv(output_file, index=False)
 
         if on_extracted:
-            processed.setdefault(doc_id, []).append((row_id, pair_id))
+            processed.setdefault(doc_id, []).append(_pair_key(row_id, pair_id))
         else:
             processed.setdefault(doc_id, []).append(row_id)
-        updated_count += 1
 
         with open(checkpoint_file, "w") as f:
             json.dump(processed, f)
+        updated_count += 1
 
-        if on_extracted:
-            log_msg = f"Labeled filters for pair {pair_id} in {granularity} {row_id} (doc {doc_id}): {labels}"
-        else:
-            log_msg = f"Labeled filters for {granularity} {row_id} in document {doc_id}: {labels}"
+        log_msg = (
+            f"Labeled filters for pair {pair_id} in {granularity} {row_id} (doc {doc_id}): {labels}"
+            if on_extracted else
+            f"Labeled filters for {granularity} {row_id} in document {doc_id}: {labels}"
+        )
+        if capture_reasoning and reasoning:
+            log_msg += f" | reasoning: {reasoning}"
         update_log(log_file, log_msg)
 
     if expand:
@@ -381,7 +451,8 @@ def extract_from_classified(
         project=None, 
         config: PipelineConfig = None, 
         granularity=None,
-        context_length=1, 
+        context_length=1,
+        label_column=None, 
         include_class=None,
         filter_keys=None, 
         filter_column=None, 
@@ -403,6 +474,7 @@ def extract_from_classified(
         config (flashqda.PipelineConfig): Configuration for prompts and extractable labels.
         granularity (str, optional): Unit of analysis, "sentence" or "paragraph". Defaults to "sentence".
         context_length (int, optional): Number of prior items to include as context. Defaults to 1.
+        label_column (str, optional): Column containing classification labels.
         include_class (str, optional): Classification label required for an item to be eligible for extraction.
             Defaults to the first label in `config.labels`.
         filter_keys (str or list, optional): Labels to exclude from extraction (e.g., items labeled as "none").
@@ -436,6 +508,9 @@ def extract_from_classified(
     checkpoint_file = temp_path / f"{Path(save_name).stem}.checkpoint.json"
 
     items = pd.read_csv(input_file)
+    items.columns = [col.lower() for col in items.columns]
+    label_column = (label_column or "classification").lower()
+    filter_column = filter_column.lower() if filter_column else None
     context_window = []
 
     if checkpoint_file.exists():
@@ -476,8 +551,10 @@ def extract_from_classified(
         result_row["filename"] = filename
         result_row[f"{granularity}_id"] = row_id
 
+        classification = str(row[f"{label_column}"]).strip().lower()
+        target = str(include_class).strip().lower()
 
-        if row["classification"] == include_class: # Include items of the chosen type (e.g., "causal")
+        if classification == target: # Include items of the chosen type (e.g., "causal")
             filter_val = str(row.get(filter_column, "")).strip().lower()
             should_extract = False
             if not filter_keys:

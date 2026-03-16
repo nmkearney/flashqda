@@ -45,7 +45,7 @@ Instructions:
 
 1. Internally reason step by step through the logic of the {granularity}, but provide only the final label as a JSON object.
 2. Use only one of these terms: `causal` or `non-causal`.
-3. Respond in valid JSON using the following format:
+3. Return your answer in a single JSON object, like this:
 
 {{
   "label": "causal"

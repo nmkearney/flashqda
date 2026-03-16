@@ -1,0 +1,27 @@
+Task:
+
+Read the following abstract:  
+{item}
+
+Determine whether any of the following labels apply:
+{label_list}
+
+If none apply, return "none".
+
+---
+
+Instructions:
+
+1. Use only the lable names, not the description.
+2. Use only the label names listed above. Do not invent new ones.
+3. Return your answer in a single JSON object, like this:
+
+{{
+  "labels": ["label 1", "label 2"],
+  "reasoning": {{
+    "label 1": "Brief 1-2 sentences why label 1 applies.",
+    "label 2": "Brief 1-2 sentences why label 2 applies."
+  }}
+}}
+
+4. Include the "reasoning" object ONLY if at least one label applies.

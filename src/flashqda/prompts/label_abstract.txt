@@ -14,7 +14,7 @@ Instructions:
 
 1. Use only the lable names, not the description.
 2. Use only the label names listed above. Do not invent new ones.
-3. Return your answer in a JSON object, like this:
+3. Return your answer in a single JSON object, like this:
 
 {{
   "labels": ["label 1", "label 2"]

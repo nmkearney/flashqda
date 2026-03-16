@@ -20,7 +20,7 @@ Instructions:
 - Prefer concise noun phrases (3–10 words), unless a verb phrase better expresses the meaning.
 - Preserve important modifiers, quantities, or qualifiers (e.g., numbers, timeframes, degrees).
 - Avoid full sentences and unnecessary punctuation.
-6. Respond in valid JSON using the following format:
+6. Return your answer in a single JSON object, like this:
 
 {{
   "relationships": [

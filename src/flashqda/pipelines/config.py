@@ -1,30 +1,34 @@
 # config.py — defines reusable pipeline configurations for classification/extraction
 
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 @dataclass
 class PipelineConfig:
     """
-    Configuration object for classification and extraction pipelines.
-
-    Stores reusable parameters needed to drive prompt-based NLP pipelines,
-    including labels, extractable fields, prompt templates, and an optional
-    system prompt. Often used to instantiate standardized pipelines by type.
+    Configuration object for labelling, classification, extraction, and grouping pipelines.
 
     Attributes:
-        pipeline_type (str): The type or name of the pipeline (e.g., "causal").
         labels (List[str]): List of classification labels.
         extract_labels (List[str]): List of fields to extract (e.g., ["cause", "effect"]).
         prompt_files (Dict[str, str]): Dictionary of named prompt template paths 
             (e.g., {"classify": "path/to/classify_prompt.txt"}).
         system_prompt (str): Optional system-level prompt prefix. Defaults to a generic assistant prompt.
     """
-    pipeline_type: str
+
+    # --- pipeline logic ---
     labels: List[str]
     extract_labels: List[str]
     prompt_files: Dict[str, str]
     system_prompt: str = "You are a helpful assistant."
+
+    # --- LLM settings ---
+    provider: str = "openai"
+    model: str = "gpt-4o"
+    base_url: Optional[str] = None
+    api_key: Optional[str] = None
+    temperature: float = 0.0
+    timeout: int = 15
 
     @classmethod
     def from_type(cls, pipeline_type: str, topic: str = None):
