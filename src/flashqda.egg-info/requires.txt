@@ -1,0 +1,8 @@
+requests
+tqdm
+openai
+pandas
+numpy<2,>=1.26
+nltk
+sentence-transformers==3.3.1
+accelerate==1.0.1
