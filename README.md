@@ -1,4 +1,5 @@
 # FlashQDA
+[![DOI](https://zenodo.org/badge/916063558.svg)](https://doi.org/10.5281/zenodo.19070867)
 
 This is a package for using Large Language Models for qualitative data analysis.
 
