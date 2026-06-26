@@ -1,0 +1,21 @@
+Context:
+
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Task:
+
+Analyze the following {granularity}:
+{item}
+
+Instructions:
+
+1. Identify any trade-offs expressed in the {granularity}. For each one, extract what is gained and what is lost.
+2. Internally reason step by step, but respond with only the final answer as JSON.
+3. Identify the gain — the outcome, value, or condition that improves or is obtained.
+4. Identify the loss — the outcome, value, or condition that worsens or is sacrificed.
+5. Write both phrases as short, self-contained noun phrases (3–10 words) — include enough context to be interpretable without the original text. For example: "higher crop yields" rather than "yields", or "increased labor costs" rather than "costs".
+6. Prefer concise noun phrases built around a clear subject and descriptor. Preserve important qualifiers such as scale, timing, degree, or negation.
+7. Do not introduce information not supported by the text.
+8. Return the answer using this JSON schema:
+{json_schema}

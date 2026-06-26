@@ -1,0 +1,7 @@
+Context: {context_window}
+
+{granularity}: {item}
+
+Which of these labels apply: {label_list}
+
+Return ["none"] if none apply. Return: {json_schema}

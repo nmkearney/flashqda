@@ -1,0 +1,9 @@
+Context: {context_window}
+
+Review the extracted themes for this {granularity}: {item}
+
+Previously extracted: {prior_relationships}
+
+Keep, revise, merge, split, or drop themes based on support from the text. Do not add themes not supported by the text.
+
+Return only: {json_schema}

@@ -1,0 +1,10 @@
+Classify the following {granularity} as 'synergy' or 'non-synergy'.
+
+Synergy: two or more factors mutually reinforce each other or combine to produce a greater benefit than either achieves alone.
+Non-synergy: no mutual reinforcement is described.
+
+Context: {context_window}
+
+{granularity}: {item}
+
+Return only: {json_schema}

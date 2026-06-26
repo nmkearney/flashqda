@@ -1,0 +1,47 @@
+Context:
+
+You are analyzing whether a synergy is described in a {granularity}.
+
+---
+
+Synergy:
+A synergy is present when two or more factors mutually reinforce each other, or when combining them produces a greater or better outcome than either achieves alone.
+This includes complementary relationships, virtuous cycles, and cases where one positive change enables or amplifies another.
+
+Common language cues:
+- together, combined with, complement, reinforce, mutually, virtuous cycle, co-benefits, both improve, enable, amplify, in combination
+
+Examples:
+- "Agroforestry improves soil health, which in turn supports higher crop yields."
+- "Access to credit and training together enable farmers to adopt improved practices."
+- "Reducing deforestation and restoring wetlands together enhance regional water regulation."
+
+---
+
+Non-synergy:
+The {granularity} does **not** describe a synergy.
+This includes mere co-occurrences, unrelated positive outcomes, or causal sequences without mutual reinforcement.
+
+Examples:
+- "Both income and rainfall increased that year."
+- "The program provided seeds and also offered technical training."
+- "Yields improved following the adoption of new varieties."
+
+---
+
+Task:
+
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Now, analyze the following {granularity}:
+{item}
+
+---
+
+Instructions:
+
+1. Classify the {granularity} as 'synergy' or 'non-synergy'.
+2. Internally reason step by step, but provide only the final label as a JSON object.
+3. Return the answer using this JSON schema:
+{json_schema}

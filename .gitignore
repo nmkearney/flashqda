@@ -1,2 +1,12 @@
+.claude/
+CLAUDE.md
+.pytest_cache/
+dev/
 .DS_Store
-
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+.coverage

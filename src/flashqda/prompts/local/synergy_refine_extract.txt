@@ -1,0 +1,9 @@
+Context: {context_window}
+
+Review the extracted synergies for this {granularity}: {item}
+
+Previously extracted: {prior_relationships}
+
+Keep, revise, merge, split, or drop synergies based on support from the text. Ensure both factors reflect mutual reinforcement, not one-way causation.
+
+Return only: {json_schema}

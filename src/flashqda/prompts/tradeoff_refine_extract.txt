@@ -1,0 +1,28 @@
+Context:
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Task:
+Review the extracted trade-offs for the following {granularity}:
+{item}
+
+Previously extracted trade-offs:
+{prior_relationships}
+
+Instructions:
+1. Review each extracted trade-off against the text.
+2. Keep trade-offs that are clearly supported by the text.
+3. Revise wording where needed so that each gain and loss phrase is clear, concise, and faithful to the text.
+4. If two trade-offs are duplicates or substantially overlap, merge them.
+5. If one trade-off combines distinct tensions, split it into separate trade-offs.
+6. Drop trade-offs that are unsupported, incorrect, or redundant.
+7. Add missing trade-offs only if they are clearly and directly supported by the text. Do not infer or speculate.
+8. For each trade-off, ensure the direction is correct: gain is what improves; loss is what worsens.
+9. Write gain and loss as short, meaningful noun phrases (3–10 words), rather than full sentences.
+10. Preserve important qualifiers such as scale, timing, degree, and negation.
+11. Do not introduce information not supported by the text.
+12. Focus on trade-offs expressed in the target {granularity}. Use the context only to clarify meaning, not to introduce new trade-offs.
+13. The number of trade-offs should generally be similar to the original list unless there is a clear reason to change it.
+14. Return the corrected full set using this JSON schema:
+{json_schema}
+Return only valid JSON and no additional text.

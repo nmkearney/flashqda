@@ -1,0 +1,9 @@
+Context: {context_window}
+
+Extract synergies from this {granularity}: {item}
+
+For each synergy, identify the two mutually reinforcing factors:
+- factor_a: first element (3-10 words)
+- factor_b: second element (3-10 words)
+
+Return only: {json_schema}

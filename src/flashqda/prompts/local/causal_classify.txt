@@ -1,0 +1,10 @@
+Classify the following {granularity} as 'causal' or 'non-causal'.
+
+Causal: one factor directly influences or determines another.
+Non-causal: no causal relationship is described.
+
+Context: {context_window}
+
+{granularity}: {item}
+
+Return only: {json_schema}

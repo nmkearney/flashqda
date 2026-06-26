@@ -1,0 +1,9 @@
+Context: {context_window}
+
+Review the extracted trade-offs for this {granularity}: {item}
+
+Previously extracted: {prior_relationships}
+
+Keep, revise, merge, split, or drop trade-offs based on support from the text. Ensure gain is what improves and loss is what worsens.
+
+Return only: {json_schema}

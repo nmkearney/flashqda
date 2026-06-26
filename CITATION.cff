@@ -1,8 +1,31 @@
 cff-version: 1.2.0
+type: software
 title: "flashQDA"
 message: "If you use this software, please cite it."
 authors:
   - family-names: Kearney
     given-names: Norman
-date-released: 2026
-version: 1.2.0
+version: 1.2.2
+date-released: 2026-06-26
+repository-code: "https://github.com/nmkearney/flashqda"
+url: "https://github.com/nmkearney/flashqda"
+license: GPL-3.0
+abstract: > 
+  flashQDA is a software tool for qualitative data analysis, enabling rapid coding,
+  thematic exploration, and visualization of qualitative datasets.
+keywords:
+  - qualitative data analysis
+  - LLM
+  - natural language processing
+  - causation
+  - coding
+
+preferred-citation:
+  type: software
+  authors:
+    - family-names: Kearney
+      given-names: Norman
+  title: "flashQDA"
+  version: 1.2.2
+  date-released: 2026-06-26
+  doi: 10.5281/zenodo.19070867

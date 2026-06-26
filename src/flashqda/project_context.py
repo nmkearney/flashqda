@@ -1,16 +1,40 @@
 # project_context.py — encapsulates project paths and I/O for notebook and pipeline use
 
+from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import json
 
 
 class ProjectContext:
+    """
+    Path manager for a FlashQDA project directory.
+
+    Wraps a project root and exposes typed paths for data, analyses, and
+    prompts. Pass a `ProjectContext` instance to pipeline functions instead
+    of raw path strings so that output directories are resolved consistently.
+
+    Attributes:
+        root (Path): Absolute path to the project root.
+        data (Path): `root/data/` — input documents (txt, pdf, docx).
+        analyses (Path): `root/analyses/` — timestamped pipeline outputs.
+        prompts (Path): `root/prompts/` — user-supplied prompt overrides.
+        results (Path): `root/results/` — retained for backward compatibility.
+    """
+
     def __init__(self, root):
         self.root = Path(root)
         self.data = self.root / "data"
-        self.results = self.root / "results"
+        self.results = self.root / "results"  # kept for backward compat
+        self.analyses = self.root / "analyses"
         self.prompts = self.root / "prompts"  # optional, for user-supplied prompts
+
+    def analysis_dir(self, analysis_type: str) -> Path:
+        """Create and return a fresh timestamped run directory for an analysis type."""
+        ts = datetime.now().strftime("%Y.%m.%d-%H-%M-%S")
+        path = self.analyses / analysis_type / ts
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     def read_data(self, filename):
         return pd.read_csv(self.data / filename)

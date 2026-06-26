@@ -1,0 +1,9 @@
+Context: {context_window}
+
+{granularity}: {item}
+
+Cause-effect pair: {pair}
+
+Which of these labels apply to this pair: {label_list}
+
+Return ["none"] if none apply. Return: {json_schema}

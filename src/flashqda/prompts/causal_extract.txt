@@ -5,32 +5,20 @@ Consider the following {granularity}(s), which occur before the {granularity} to
 
 Task:
 
-Read the following {granularity}:
+Analyze the following {granularity}:
 {item}
-
-Identify any causal relationships expressed in the {granularity}. For each one, extract a clear and meaningful version of both the cause and effect.
 
 Instructions:
 
-1. Internally reason step by step through the {granularity}, but respond with only the final answer as JSON.
-2. Identify each cause — the condition or factor that enables or produces something.
-3. Identify each effect — the result or consequence that logically follows from the cause.
-4. Consider both directions (A → B and B → A) and choose the one that best reflects the meaning of the {granularity}.
-5. Refine both the cause and the effect to express the core idea clearly. Compare each phrase to the original {granularity} and adjust as needed for accuracy.
-- Prefer concise noun phrases (3–10 words), unless a verb phrase better expresses the meaning.
+1. Identify any causal relationships expressed in the {granularity}. For each one, extract a clear and meaningful version of both the cause and effect.
+2. Internally reason step by step through the {granularity}, but respond with only the final answer as JSON.
+3. Identify each cause — the condition or factor that enables or produces something.
+4. Identify each effect — the result or consequence that logically follows from the cause.
+5. Consider both directions (A → B and B → A) and choose the one that best reflects the meaning of the {granularity}.
+6. Refine both the cause and the effect to express the core idea clearly. Compare each phrase to the original {granularity} and adjust as needed for accuracy.
+- Whenever possible, include both a subject (or object) and a predicate so the phrase is self-contained and interpretable without the original text (e.g., medication dose increases) rather than "increase in dose", or "patients experience side effects" rather than "side effects").
+- Prefer concise noun phrases (3–10 words) built around an active or stative verb; fall back to noun phrases only when no natural verb form exists.
 - Preserve important modifiers, quantities, or qualifiers (e.g., numbers, timeframes, degrees).
 - Avoid full sentences and unnecessary punctuation.
-6. Return your answer in a single JSON object, like this:
-
-{{
-  "relationships": [
-    {{
-      "cause": "refined cause phrase",
-      "effect": "refined effect phrase"
-    }},
-    {{
-      "cause": "another cause",
-      "effect": "another effect"
-    }}
-  ]
-}}
+7. Return the answer using this JSON schema:
+{json_schema}

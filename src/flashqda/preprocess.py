@@ -13,21 +13,21 @@ def preprocess_documents(
         save_name=None
         ):
     """
-    Segment .txt documents into paragraphs or sentences and save them in a csv file.
-     
-    The output file will include a document_id for each document, the filename of each document, an item_id for each item, and the items.
+    Segment documents into paragraphs or sentences and save as CSV.
+
+    Supported file formats: .txt, .pdf (requires pdfplumber), .docx (requires python-docx).
+    All files in project.data/ with a supported extension are processed in alphabetical order.
+    Files with unrecognised extensions are skipped with a printed warning.
 
     Args:
-        project (flashqda.ProjectContext): A Project object representing document(s) to process.
-        granularity (str, optional): Segmentation level. Options are "sentence" and "paragraph". 
-            Defaults to "sentence".
-        custom_items (str or list of str, optional): Custom strings containing punctuation that should not be treated as sentence boundaries (e.g., abbreviations). 
-            For multiple items, use a list of quoted strings, e.g., ["i.tem", "it.em"].
-        save_name (str, optional): Name for csv file that stores the segmented items.
-            Defaults to "sentences.csv" or "paragraphs.csv".
-    
+        project (flashqda.ProjectContext): Project context providing the data directory.
+        granularity (str, optional): "sentence" (default) or "paragraph".
+        custom_items: Deprecated. Retained for backward compatibility; has no effect.
+        save_name (str, optional): Output CSV filename. Defaults to "{granularity}.csv".
+
     Returns:
-        None: The function writes a CSV file to disk and returns nothing.
+        None: Writes a CSV to project.data with columns:
+            document_id, filename, {granularity}_id, {granularity}.
     """
 
     granularity = granularity if granularity in ("sentence", "paragraph") else "sentence"

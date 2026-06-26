@@ -1,0 +1,14 @@
+Context: {context_window}
+
+Review the extracted relationships for this {granularity}: {item}
+
+Previously extracted: {prior_relationships}
+
+Instructions:
+1. Keep relationships clearly supported by the text.
+2. Remove duplicates and unsupported relationships.
+3. Fix wording: short phrases, correct direction (cause -> effect).
+4. Do not add relationships not in the text.
+
+Return corrected set: {json_schema}
+Return only valid JSON.

@@ -6,6 +6,8 @@ import time
 from pathlib import Path
 from tqdm import tqdm
 
+from flashqda.prompt_loader import load_formatted_prompt
+
 import traceback
 
 
@@ -62,62 +64,25 @@ def _save_checkpoint(checkpoint_path: Optional[Path], labels: Dict[int, str]):
 # Core LLM call helper
 ########################
 
-def _build_prompt_for_cluster(cluster_items: List[str]) -> str:
-    """
-    Construct a prompt that asks the model to create a short, human-usable theme label.
-    We DO NOT want a paragraph. We want something like:
-      - "Staffing shortages / burnout"
-      - "Communication gaps with management"
-      - "IT-related technical failures"
-    """
-    # We cap the examples we feed the model so context doesn't explode for huge clusters.
-    # We'll take up to, say, 20 representative items.
+def _build_prompt_for_cluster(cluster_items: List[str], project=None, config=None) -> str:
     MAX_EXAMPLES = 20
     examples = cluster_items[:MAX_EXAMPLES]
-
     bullet_list = "\n".join(f"- {item}" for item in examples)
-
-    prompt = (
-        "You are assisting in qualitative thematic analysis.\n"
-        "You are given a set of semantically similar items.\n\n"
-        "Task:\n"
-        "1. Infer the central shared theme.\n"
-        "2. Respond with ONLY a short label (max ~7 words), no punctuation at the end.\n"
-        "3. The label should be specific and human-readable, not generic.\n"
-        "4. Do not include quotes, numbering, or explanations.\n\n"
-        "Examples from this cluster:\n"
-       f"{bullet_list}\n\n"
-        "Label:"
-    )
-
-    #prompt = (
-    #    "You are assisting in qualitative thematic analysis.\n"
-    #    "You are given a set of semantically similar trade-offs.\n\n"
-    #    "Task:\n"
-    #    "1. Describe the general theme of the set.\n"
-    #    "2. Give the set a descriptive label based on its general theme.\n"
-    #    "3. Format the label as 'X vs. Y', where X is the thing that is gained or improved and Y is the thing that is lost or worsens.\n"
-    #    "4. Respond with ONLY a short label (max ~10 words), no punctuation at the end.\n"
-    #    "5. The label should be specific and human-readable, not generic.\n"
-    #    "6. Do not include quotes, numbering, or explanations.\n\n"
-    #    "Examples from this cluster:\n"
-    #    f"{bullet_list}\n\n"
-    #    "Label:"
-    #)
-
-    return prompt
+    return load_formatted_prompt("label_cluster.txt", project=project, config=config, bullet_list=bullet_list)
 
 
 def _call_llm_for_label(
     client,
     model_name: str,
     cluster_items: List[str],
+    project=None,
+    config=None,
 ) -> Optional[str]:
     """
     Ask the LLM for a label for this cluster. Returns the raw string,
     or None if we couldn't get one.
     """
-    prompt = _build_prompt_for_cluster(cluster_items)
+    prompt = _build_prompt_for_cluster(cluster_items, project=project, config=config)
 
     try:
         response = client.chat.completions.create(
@@ -177,6 +142,7 @@ def label_clusters(
     max_retries_per_cluster: int = 3,
     retry_delay_seconds: float = 1.5,
     label_min_items: int = 2,
+    project=None,
     config=None,
 ) -> Dict[int, str]:
     """
@@ -222,9 +188,9 @@ def label_clusters(
         if cid in labels and labels[cid]:
             continue
 
-        # 🧠 NEW: Skip small clusters below threshold
+        # Use item name for category with only 1 item
         if len(items) < label_min_items:
-            labels[cid] = f"Category_{cid}"
+            labels[cid] = items[0]
             _log(
                 log_path,
                 f"[INFO] Skipping LLM labeling for cluster {cid} "
@@ -239,7 +205,7 @@ def label_clusters(
         label_text = None
         if client is not None:
             for attempt in range(1, max_retries_per_cluster + 1):
-                label_text = _call_llm_for_label(client, model_name, items)
+                label_text = _call_llm_for_label(client, model_name, items, project=project, config=config)
                 if label_text:
                     break
                 _log(log_path, f"[WARN] Attempt {attempt} failed for cluster {cid}, retrying...")

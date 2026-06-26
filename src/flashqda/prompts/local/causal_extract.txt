@@ -1,0 +1,9 @@
+Context: {context_window}
+
+Extract causal relationships from this {granularity}: {item}
+
+For each relationship, identify:
+- cause: the factor that enables or produces something (3-10 words)
+- effect: the result or consequence (3-10 words)
+
+Return only: {json_schema}

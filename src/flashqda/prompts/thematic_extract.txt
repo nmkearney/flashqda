@@ -1,0 +1,21 @@
+Context:
+
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Task:
+
+Analyze the following {granularity}:
+{item}
+
+Instructions:
+
+1. Identify any themes expressed in the {granularity}. A theme is a recurring pattern of meaning — a concept, concern, value, or experience that characterizes what is being described.
+2. For each theme, extract a concise label and a short phrase of supporting evidence drawn from the {granularity}.
+3. Internally reason step by step, but respond with only the final answer as JSON.
+4. Write the theme as a noun phrase or short gerund phrase (3–10 words) that captures the core meaning — for example, "lack of institutional support" or "navigating competing priorities". Avoid vague labels like "challenges" or "issues".
+5. Write the evidence as a short, self-contained phrase (3–10 words) that paraphrases the relevant passage — include enough context to be interpretable without the original text.
+6. Preserve important qualifiers, such as negation, degree, or temporal scope.
+7. Do not introduce information not supported by the text.
+8. Return the answer using this JSON schema:
+{json_schema}

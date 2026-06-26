@@ -1,0 +1,15 @@
+You are assisting in qualitative thematic analysis.
+You are given a set of semantically similar trade-offs.
+
+Task:
+1. Describe the general theme of the set.
+2. Give the set a descriptive label based on its general theme.
+3. Format the label as 'X vs. Y', where X is the thing that is gained or improved and Y is the thing that is lost or worsens.
+4. Respond with ONLY a short label (max ~10 words), no punctuation at the end.
+5. The label should be specific and human-readable, not generic.
+6. Do not include quotes, numbering, or explanations.
+
+Examples from this cluster:
+{bullet_list}
+
+Label:

@@ -13,16 +13,14 @@ Read the following {granularity}:
 Determine whether any of the following labels apply:
 {label_list}
 
-If none apply, return "none".
-
 ---
 
 Instructions:
 
-1. Use only the label names, not the description.
-2. Use only the label names listed above. Do not invent new ones.
-3. Return your answer in a single JSON object, like this:
-
-{{
-  "labels": ["label 1", "label 2"]
-}}
+1. Use only the label names listed above.
+2. Do not invent new labels.
+3. If no label applies, return ["none"] in the labels field.
+4. Reasoning requested: {return_reasoning}
+5. If reasoning requested is True, briefly explain why each returned label applies.
+6. Return the answer using this JSON schema:
+{json_schema}

@@ -10,22 +10,19 @@ Task:
 Read the following {granularity}:  
 {item}
 
-Now focus your analysis on the following cause-effect pair extracted from that {granularity}:
+Analyze following cause-effect pair extracted from that {granularity}:
 {pair}
-
-Determine whether any of the following labels apply to this specific pair:
-{label_list}
-
-If none apply, return "none".
 
 ---
 
 Instructions:
 
-1. Use only the label names, not the description.
-2. Use only the label names listed above. Do not invent new ones.
-3. Return your answer in a single JSON object, like this:
-
-{{
-  "labels": ["label 1", "label 2"]
-}}
+1. Determine whether any of the following labels apply to this specific pair:
+{label_list}
+2. Use only the label names listed above.
+3. Do not invent new labels.
+4. If no label applies, return ["none"] in the labels field.
+5. Reasoning requested: {return_reasoning}
+6. If reasoning requested is True, briefly explain why each returned label applies.
+7. Return the answer using this JSON schema:
+{json_schema}

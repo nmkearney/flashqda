@@ -1,0 +1,6 @@
+Given these semantically similar items, produce a short theme label (2-6 words, title case). Output the label only.
+
+Items:
+{bullet_list}
+
+Label:

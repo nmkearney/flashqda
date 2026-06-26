@@ -1,0 +1,28 @@
+Context:
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Task:
+Review the extracted synergies for the following {granularity}:
+{item}
+
+Previously extracted synergies:
+{prior_relationships}
+
+Instructions:
+1. Review each extracted synergy against the text.
+2. Keep synergies that are clearly supported by the text.
+3. Revise wording where needed so that each factor_a and factor_b phrase is clear, concise, and faithful to the text.
+4. If two synergies are duplicates or substantially overlap, merge them.
+5. If one synergy combines distinct synergistic relationships, split it into separate entries.
+6. Drop synergies that are unsupported, incorrect, or redundant.
+7. Add missing synergies only if they are clearly and directly supported by the text. Do not infer or speculate.
+8. Ensure both factors reflect mutual reinforcement, not a one-way causal relationship.
+9. Write each factor as a short, meaningful noun phrase (3–10 words), rather than a full sentence.
+10. Preserve important qualifiers such as conditions, scale, and scope.
+11. Do not introduce information not supported by the text.
+12. Focus on synergies expressed in the target {granularity}. Use the context only to clarify meaning, not to introduce new synergies.
+13. The number of synergies should generally be similar to the original list unless there is a clear reason to change it.
+14. Return the corrected full set using this JSON schema:
+{json_schema}
+Return only valid JSON and no additional text.

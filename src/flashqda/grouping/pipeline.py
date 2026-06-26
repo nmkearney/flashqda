@@ -15,12 +15,15 @@ from flashqda.log_utils import update_log
 def group_items(
     input_file: Path,
     column_names: List[str],
-    output_directory: Path,
+    output_directory: Optional[Path] = None,
     embedding_model: str = "text-embedding-3-large",
     similarity_threshold: float = 0.6,
     linkage_method: str = "average",
     use_llm_labels: bool = True,
-    llm_model: str = "gpt-4o",
+    llm_model: Optional[str] = None,
+    save_dendrogram_plot: bool = False,
+    config: PipelineConfig = None,
+    project=None,
     save_name: str = "grouped_items",
     # infra / safety knobs
     cache_path: Optional[Path] = None,
@@ -70,6 +73,10 @@ def group_items(
     # ---------------------------------------------------------------------
     # Resolve/prepare paths
     # ---------------------------------------------------------------------
+    if output_directory is None:
+        if project is None:
+            raise ValueError("Either output_directory or project must be provided.")
+        output_directory = project.analysis_dir("grouping")
     output_directory = Path(output_directory)
     output_directory.mkdir(parents=True, exist_ok=True)
 
@@ -77,10 +84,13 @@ def group_items(
         cache_path = output_directory / f"{save_name}_embeddings.json"
 
     if log_path is None:
-        log_path = output_directory / f"{save_name}_log.txt"
+        log_path = output_directory / "logs" / f"{save_name}_log.txt"
 
     if label_checkpoint_path is None:
-        label_checkpoint_path = output_directory / f"{save_name}_label_checkpoint.json"
+        label_checkpoint_path = output_directory / "temp" / f"{save_name}_label_checkpoint.json"
+
+    if llm_model is None:
+        llm_model = getattr(config, "model", "gpt-4o")
 
     update_log(log_path, f"[INFO] === Starting grouping pipeline (AHC) ===")
     update_log(log_path, f"[INFO] Input file: {input_file}")
@@ -110,6 +120,10 @@ def group_items(
     # ---------------------------------------------------------------------
     # 3. Generate / load embeddings (with caching and retry safety)
     # ---------------------------------------------------------------------
+    # Resolve embedding model from config (if provided)
+    if config is not None and getattr(config, "embedding_model", None):
+        embedding_model = config.embedding_model
+    
     update_log(log_path, "[INFO] Generating embeddings...")
     embeddings = embed_texts(
         texts=items,
@@ -143,6 +157,7 @@ def group_items(
             model_name=llm_model,
             log_path=log_path,
             checkpoint_path=label_checkpoint_path,
+            project=project,
             config=config,
         )
         update_log(log_path, f"[INFO] Labeled {len(labels)} clusters.")
@@ -206,13 +221,14 @@ def group_items(
     # ---------------------------------------------------------------------
     # 10. Save dendrogram plot of the AHC tree
     # ---------------------------------------------------------------------
-    dendro_path = output_directory / f"{save_name}_dendrogram.png"
-    update_log(log_path, f"[INFO] Saving dendrogram plot to {dendro_path}")
-    save_dendrogram(
-        linkage_matrix=Z,
-        labels=items,
-        out_path=dendro_path,
-    )
+    if save_dendrogram_plot:
+        dendro_path = output_directory / f"{save_name}_dendrogram.png"
+        update_log(log_path, f"[INFO] Saving dendrogram plot to {dendro_path}")
+        save_dendrogram(
+            linkage_matrix=Z,
+            labels=items,
+            out_path=dendro_path,
+        )
 
     # ---------------------------------------------------------------------
     # 11. Wrap up
@@ -220,10 +236,16 @@ def group_items(
     update_log(log_path, "[INFO] === Grouping pipeline complete ===")
     update_log(log_path, f"[INFO] Rows in augmented output: {len(df_aug)}")
     update_log(log_path, f"[INFO] Clusters in summary: {len(summary_df)}")
-    update_log(log_path, f"[INFO] Artifacts written:\n"
-                         f" - {augmented_path}\n"
-                         f" - {mapping_path}\n"
-                         f" - {sim_path}\n"
-                         f" - {dendro_path}\n")
+    artifact_lines = [
+        f" - {augmented_path}",
+        f" - {mapping_path}",
+        f" - {sim_path}"
+    ]
+    if save_dendrogram_plot:
+        artifact_lines.append(f" - {dendro_path}")
+    update_log(
+        log_path,
+        "[INFO] Artifacts written:\n" + "\n".join(artifact_lines) + "\n"
+    )
 
     return df_aug

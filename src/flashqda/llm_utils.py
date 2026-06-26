@@ -34,6 +34,7 @@ def _provider_openai(config) -> Dict[str, Any]:
         "client": make_openai_client(config),
         "model": getattr(config, "model", "gpt-4o"),
         "supports_json_mode": True,
+        "supports_json_schema": True,
         "provider_name": "openai",
     }
  
@@ -44,7 +45,8 @@ def _provider_ollama(config) -> Dict[str, Any]:
     return {
         "client": make_openai_client(config),
         "model": getattr(config, "model", "llama3"),
-        "supports_json_mode": False,
+        "supports_json_mode": True,
+        "supports_json_schema": True,
         "provider_name": "ollama",
     }
 
@@ -56,13 +58,28 @@ def _provider_openai_compatible(config) -> Dict[str, Any]:
         "client": make_openai_client(config),
         "model": getattr(config, "model", "unknown-model"),
         "supports_json_mode": False,
+        "supports_json_schema": True,
         "provider_name": "openai_compatible",
+    }
+
+def _provider_anthropic(config) -> Dict[str, Any]:
+    """
+    Anthropic Claude via the anthropic SDK.
+    send_to_llm handles this provider through a dedicated path (_send_to_anthropic).
+    """
+    return {
+        "client": None,
+        "model": getattr(config, "model", "claude-sonnet-4-6"),
+        "supports_json_mode": False,
+        "supports_json_schema": False,
+        "provider_name": "anthropic",
     }
 
 PROVIDER_REGISTRY: Dict[str, Callable[[Any], Dict[str,Any]]] = {
     "openai": _provider_openai,
     "ollama": _provider_ollama,
     "openai_compatible": _provider_openai_compatible,
+    "anthropic": _provider_anthropic,
 }
 
 # ----------------------
@@ -79,6 +96,22 @@ def get_llm_api_key(config=None, api_key=None, api_key_filename="llm_api_key.txt
     """
 
     provider = getattr(config, "provider", "openai") if config is not None else "openai"
+
+    # Anthropic: check ANTHROPIC_API_KEY first, fall back to LLM_API_KEY
+    if provider == "anthropic":
+        key = (
+            api_key
+            or getattr(config, "api_key", None)
+            or os.getenv("ANTHROPIC_API_KEY")
+            or os.getenv("LLM_API_KEY")
+        )
+        if not key:
+            raise RuntimeError(
+                "No API key found for Anthropic. Set the ANTHROPIC_API_KEY environment "
+                "variable or pass api_key to PipelineConfig."
+            )
+        os.environ["LLM_API_KEY"] = key
+        return key
 
     # Local / OpenAI-compatible providers: key may be optional
     if provider in ("ollama", "openai_compatible"):
@@ -145,35 +178,11 @@ def make_openai_client(config=None):
     return OpenAI(**get_client_kwargs(config))
 
 # -------------
-# Retry wrapper
-# -------------
-
-def safe_llm_call(func, *args, max_retries=5, base_delay=2, jitter=1.0, **kwargs):
-    """
-    Executes an LLM API call with exponential backoff and structured logging.
-    Does NOT replace existing LLM calls — it wraps them safely.
-    This is backward compatible and can be adopted gradually.
-    """
-    attempt = 0
-    while True:
-        try:
-            return func(*args, **kwargs)
-        except OpenAIError as e:
-            attempt += 1
-            if attempt > max_retries:
-                update_log(f"LLM call failed after {max_retries} retries: {e}", level="error")
-                raise
-            delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, jitter)
-            update_log(f"LLM error: {e}. Retrying in {delay:.1f}s (attempt {attempt}/{max_retries})", level="warning")
-            time.sleep(delay)
-        except Exception as e:
-            update_log(f"Unexpected error during LLM call: {e}", level="error")
-            raise
-
-
-# -------------
 # JSON handling
 # -------------
+
+def validate_required_keys(data: dict, required_keys: list[str]) -> bool:
+    return isinstance(data, dict) and all(k in data for k in required_keys)
 
 def extract_json_from_text(text: str) -> Any:
     """
@@ -232,6 +241,65 @@ def get_provider_settings(config) -> Dict[str, Any]:
         )
     return PROVIDER_REGISTRY[provider](config)
 
+def _send_to_anthropic(
+    system_prompt: str,
+    user_prompt: str,
+    config,
+    response_format: Optional[Dict[str, Any]],
+    max_retries: int,
+    sleep_seconds: int,
+) -> str:
+    """
+    Send a prompt to an Anthropic Claude model.
+    JSON output is enforced via prompt instructions (Anthropic's structured output
+    uses tool use, which is not required for FlashQDA's use case).
+    """
+    try:
+        import anthropic as _anthropic
+    except ImportError:
+        raise ImportError(
+            "The 'anthropic' package is required for provider='anthropic'. "
+            "Install it with: pip install anthropic  or  pip install 'flashqda[anthropic]'"
+        )
+
+    api_key = (
+        getattr(config, "api_key", None)
+        or os.getenv("ANTHROPIC_API_KEY")
+        or os.getenv("LLM_API_KEY")
+    )
+    client = _anthropic.Anthropic(api_key=api_key)
+    model = getattr(config, "model", "claude-sonnet-4-6")
+    temperature = getattr(config, "temperature", 0.0)
+    max_tokens = getattr(config, "max_tokens", 4096)
+
+    final_system_prompt = system_prompt
+    if response_format is not None:
+        final_system_prompt = (
+            f"{system_prompt}\n\n"
+            "Return only valid JSON. "
+            "Do not include markdown fences, comments, or explanatory text."
+        )
+
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=final_system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            return response.content[0].text.strip()
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(sleep_seconds)
+            else:
+                raise RuntimeError(
+                    f"Anthropic API call failed after {max_retries} attempts "
+                    f"(model={model}): {e}"
+                )
+
+
 def send_to_llm(
     system_prompt: str,
     user_prompt: str,
@@ -243,12 +311,16 @@ def send_to_llm(
     """
     Send a prompt to the configured LLM provider.
     If JSON mode is requested but the provider does not support it, the function falls back to prompt-only JSON instructions.
+    Anthropic Claude models are handled via a dedicated path using the anthropic SDK.
     """
+    if getattr(config, "provider", "openai") == "anthropic":
+        return _send_to_anthropic(
+            system_prompt, user_prompt, config, response_format, max_retries, sleep_seconds
+        )
+
     provider_settings = get_provider_settings(config)
-    
     client = provider_settings["client"]
     model = provider_settings["model"]
-    supports_json_mode = provider_settings["supports_json_mode"]
 
     use_json_mode = bool(getattr(config, "use_json_mode", True))
     temperature = getattr(config, "temperature", 0.0)
@@ -257,13 +329,14 @@ def send_to_llm(
     final_system_prompt = system_prompt
     request_kwargs = {}
 
-    if response_format is not None and use_json_mode and supports_json_mode:
+    if response_format is not None and use_json_mode:
         request_kwargs["response_format"] = response_format
     elif response_format is not None:
         # JSON fallback: reinforce via prompt, do not pass response_format
         final_system_prompt = (
             f"{system_prompt}\n\n"
-            "Return only valid JSON. Do not include markdown fences, comments, or explanatory text before or after the JSON."
+            "Return only valid JSON. " 
+            "Do not include markdown fences, comments, or explanatory text."
         )
 
     messages = [
@@ -291,3 +364,13 @@ def send_to_llm(
                     f"LLM API call failed after {max_retries} attempts: "
                     f"(provider={provider_name}, model={model}): {e}"
                 )
+            
+def make_embedding_client(config=None):
+    return OpenAI(
+        api_key=getattr(config, "embedding_api_key", None)
+                or getattr(config, "api_key", None)
+                or os.getenv("LLM_API_KEY")
+                or "not-needed",
+        base_url=getattr(config, "embedding_base_url", None)
+                 or getattr(config, "base_url", None),
+    )

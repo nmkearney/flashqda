@@ -1,6 +1,6 @@
 [project]
 name = "flashqda"
-version = "1.2.1"
+version = "1.2.2"
 authors = [
     { name = "Norman Kearney", email = "norman.kearney@protonmail.com"},
 ]
@@ -17,10 +17,32 @@ dependencies = [
     "tqdm",
     "openai",
     "pandas",
-    "numpy>=1.26,<2",
+    "numpy>=1.21",
     "nltk",
-    "sentence-transformers==3.3.1",
-    "accelerate==1.0.1"
+    "pysbd>=0.3.4",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "sentence-transformers>=3.0",
+    "accelerate>=1.0",
+]
+
+[project.optional-dependencies]
+grouping = [
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "sentence-transformers>=3.0",
+]
+anthropic = [
+    "anthropic",
+]
+preprocessing = [
+    "pymupdf",
+    "python-docx",
+]
+dev = [
+    "pytest>=7.0",
 ]
 
 [project.urls]
@@ -29,3 +51,6 @@ Issues = "https://github.com/nmkearney/flashqda/issues"
 
 [tool.setuptools.package-data]
 flashqda = ["prompts/*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

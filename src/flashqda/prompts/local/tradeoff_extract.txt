@@ -1,0 +1,9 @@
+Context: {context_window}
+
+Extract trade-offs from this {granularity}: {item}
+
+For each trade-off, identify:
+- gain: what is obtained or improved (3-10 words)
+- loss: what is sacrificed or worsened (3-10 words)
+
+Return only: {json_schema}

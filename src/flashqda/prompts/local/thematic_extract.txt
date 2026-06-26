@@ -1,0 +1,9 @@
+Context: {context_window}
+
+Extract themes from this {granularity}: {item}
+
+For each theme, identify:
+- theme: a concise noun phrase describing the pattern of meaning (3-10 words)
+- evidence: a short phrase paraphrasing the supporting text (3-10 words)
+
+Return only: {json_schema}

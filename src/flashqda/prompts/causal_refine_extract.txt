@@ -1,0 +1,28 @@
+Context:
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Task:
+Review the extracted causal relationships for the following {granularity}:
+{item}
+
+Previously extracted relationships:
+{prior_relationships}
+
+Instructions:
+1.Review the extracted relationships against the text.
+2. Keep relationships that are clearly supported by the text.
+3. Revise wording where needed so that each cause and effect is clear, concise, and faithful to the text.
+4. If two relationships are duplicates or substantially overlap, merge them.
+5. If one relationship combines distinct causal claims, split it into separate relationships.
+6. Drop relationships that are unsupported, incorrect, or redundant.
+7. Add missing relationships only if they are clearly and directly supported by the text. Do not infer or speculate.
+8. For each relationship, ensure the direction is correct (cause → effect).
+9. Write cause and effect as short, meaningful phrases (preferably concise noun phrases), rather than full sentences.
+10. Preserve important qualifiers such as timing, quantity, degree, and negation.
+11. Do not introduce information not supported by the text.
+12. Focus on relationships expressed in the target {granularity}. Use the context only to clarify meaning, not to introduce new relationships.
+13. The number of relationships should generally be similar to the original list unless there is a clear reason to change it.
+14. Return the corrected full set using this JSON schema:
+{json_schema}
+Return only valid JSON and no additional text.

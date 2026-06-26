@@ -2,14 +2,18 @@
 import pandas as pd
 
 def extract_unique_items(df, column_names):
-    """Return a unique list of non-null items from selected columns."""
-    series_list = [df[col].dropna().astype(str) for col in column_names if col in df.columns]
+    series_list = []
+    for col in column_names:
+        if col in df.columns:
+            s = df[col].dropna().astype(str).str.strip()
+            s = s[s != ""]
+            series_list.append(s)
+
+    if not series_list:
+        return []
+
     return pd.concat(series_list).drop_duplicates().tolist()
 
-# utils.py (new helper or a new file dendrogram_utils.py if you prefer)
-
-import matplotlib.pyplot as plt
-from scipy.cluster.hierarchy import dendrogram
 import numpy as np
 from typing import List
 
@@ -26,6 +30,16 @@ def save_dendrogram(
     become unreadable. For big corpora > max_labels, we still plot the
     structure but drop leaf labels.
     """
+    try:
+        import matplotlib.pyplot as plt
+        from scipy.cluster.hierarchy import dendrogram
+    except ImportError as e:
+        raise ImportError(
+            "matplotlib and scipy are required for dendrogram plotting. "
+            "Install them with 'pip install matplotlib scipy' or set "
+            "'save_dendrogram_plot=False' in group_items."
+    ) from e
+
     plt.figure(figsize=(12, 6))
 
     if len(labels) <= max_labels:

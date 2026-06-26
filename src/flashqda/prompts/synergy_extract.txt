@@ -1,0 +1,21 @@
+Context:
+
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Task:
+
+Analyze the following {granularity}:
+{item}
+
+Instructions:
+
+1. Identify any synergies expressed in the {granularity}. For each one, extract the two mutually reinforcing factors.
+2. Internally reason step by step, but respond with only the final answer as JSON.
+3. Identify factor_a and factor_b — the two elements that reinforce each other or combine to produce a greater benefit. The relationship is symmetric: both factors contribute to the synergy.
+4. Write both phrases as short, self-contained noun phrases or verb phrases (3–10 words) that are interpretable without the original text. For example: "soil health improvements" rather than "soil", or "farmers access to credit" rather than "credit".
+5. Prefer concise noun phrases built around a clear subject and descriptor. Preserve important qualifiers such as scale, conditions, or scope.
+6. Avoid labelling one factor as cause and the other as effect — synergy implies mutual reinforcement, not unidirectional causation.
+7. Do not introduce information not supported by the text.
+8. Return the answer using this JSON schema:
+{json_schema}

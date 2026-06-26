@@ -1,0 +1,28 @@
+Context:
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Task:
+Review the extracted themes for the following {granularity}:
+{item}
+
+Previously extracted themes:
+{prior_relationships}
+
+Instructions:
+1. Review each extracted theme and its evidence against the text.
+2. Keep themes that are clearly supported by the text.
+3. Revise wording where needed so that each theme and evidence phrase is clear, concise, and faithful to the text.
+4. If two themes are duplicates or substantially overlap, merge them into one.
+5. If one theme combines distinct ideas, split it into separate themes.
+6. Drop themes that are unsupported, incorrect, or redundant.
+7. Add missing themes only if they are clearly and directly supported by the text. Do not infer or speculate.
+8. Write each theme as a noun phrase or short gerund phrase (3–10 words) that captures a pattern of meaning. Avoid vague labels.
+9. Write each evidence phrase as a short, self-contained phrase (3–10 words) paraphrasing the relevant passage.
+10. Preserve important qualifiers such as negation, degree, and temporal scope.
+11. Do not introduce information not supported by the text.
+12. Focus on themes expressed in the target {granularity}. Use the context only to clarify meaning, not to introduce new themes.
+13. The number of themes should generally be similar to the original list unless there is a clear reason to change it.
+14. Return the corrected full set using this JSON schema:
+{json_schema}
+Return only valid JSON and no additional text.

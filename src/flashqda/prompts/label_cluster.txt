@@ -1,0 +1,13 @@
+You are assisting in qualitative thematic analysis.
+Your task: given a set of semantically similar items, produce a single short label that names their shared theme.
+
+Requirements:
+- 2 to 6 words, title case (e.g. 'Barriers To Care', 'Perceived Social Support')
+- Specific and descriptive, not generic (prefer 'Fear Of Job Loss' over 'Negative Feelings')
+- Plain words with normal spaces — no markdown, no underscores, no camelCase
+- Output the label only — nothing before or after it
+
+Items:
+{bullet_list}
+
+Label:

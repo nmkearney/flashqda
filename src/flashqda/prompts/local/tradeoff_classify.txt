@@ -1,0 +1,10 @@
+Classify the following {granularity} as 'tradeoff' or 'non-tradeoff'.
+
+Tradeoff: something is gained at the cost of something else, or two competing outcomes are in tension.
+Non-tradeoff: no tension or sacrifice is described.
+
+Context: {context_window}
+
+{granularity}: {item}
+
+Return only: {json_schema}

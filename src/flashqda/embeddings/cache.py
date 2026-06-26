@@ -66,8 +66,12 @@ class EmbeddingCache:
         """
         Retrieve cached embeddings for a list of texts.
         Returns a numpy array in the same order as input texts.
+        Raises KeyError if any text is not in the cache.
         """
-        return np.array([self.data[t] for t in texts if t in self.data], dtype=np.float32)
+        missing = [t for t in texts if t not in self.data]
+        if missing:
+            raise KeyError(f"{len(missing)} text(s) not found in cache. Call get_missing_texts() first.")
+        return np.array([self.data[t] for t in texts], dtype=np.float32)
 
     # ---------------------------------------------------------------------
     def has_all(self, texts: List[str]) -> bool:

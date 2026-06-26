@@ -1,0 +1,47 @@
+Context:
+
+You are analyzing whether a trade-off is described in a {granularity}.
+
+---
+
+Tradeoff:
+A tradeoff is present when something is gained or improved at the cost of something else being lost or worsened, or when two competing values, goals, or outcomes are in tension.
+This includes explicit acknowledgments of compromise, sacrifice, or tension between competing priorities.
+
+Common language cues:
+- at the cost of, at the expense of, but, however, yet, while, trade-off, tension, compromise, sacrifice, balance, on the other hand
+
+Examples:
+- "Higher yields require more fertilizer input, which increases costs for smallholder farmers."
+- "Conservation areas protect biodiversity but limit land available for farming."
+- "Improving processing efficiency reduces labor requirements, affecting local employment."
+
+---
+
+Non-tradeoff:
+The {granularity} does **not** describe a tradeoff.
+This includes neutral descriptions, single-outcome statements, or mere co-occurrences without tension.
+
+Examples:
+- "Both income and wellbeing improved following the intervention."
+- "Farmers adopted new practices after receiving training."
+- "The study surveyed 200 households across three regions."
+
+---
+
+Task:
+
+Consider the following {granularity}(s), which occur before the {granularity} to be analyzed:
+{context_window}
+
+Now, analyze the following {granularity}:
+{item}
+
+---
+
+Instructions:
+
+1. Classify the {granularity} as 'tradeoff' or 'non-tradeoff'.
+2. Internally reason step by step, but provide only the final label as a JSON object.
+3. Return the answer using this JSON schema:
+{json_schema}

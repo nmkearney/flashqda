@@ -1,37 +1,71 @@
-##text_utils.py
 import re
+import pysbd
+from pysbd.lang.common.standard import Standard
 
-def segment_sentences(document_text, custom_items):
+# Extend pySBD's English abbreviation list with terms common in academic text.
+# 'approx', 'ca', 'vol', 'ed', 'eds' are absent from the default list.
+_EXTRA_ABBREVS = ["approx", "ca", "vol", "ed", "eds"]
+for _abbr in _EXTRA_ABBREVS:
+    if _abbr not in Standard.Abbreviation.ABBREVIATIONS:
+        Standard.Abbreviation.ABBREVIATIONS.append(_abbr)
+
+
+def _normalize_line_breaks(text: str) -> str:
     """
-    Segment .txt documents into sentences.
+    Normalize PDF-extraction line break artifacts before segmentation.
+    - Joins hyphenated line breaks: "hyphen-\\nated" -> "hyphenated"
+    - Collapses single newlines to spaces, preserving blank-line paragraph markers.
     """
+    text = re.sub(r'-\n', '', text)
+    text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+    return text
 
-    # Replace non-breaking spaces with regular spaces
-    document_text = document_text.replace("\u00A0", " ")
 
-    # Replace 'e. ' and 'i. ' with 'e.' and 'i.' respectively
-    document_text = re.sub(r'\b(e\.)\s+(?=\S)', r'\1', document_text)
-    document_text = re.sub(r'\b(i\.)\s+(?=\S)', r'\1', document_text)
+def segment_sentences(text, custom_items=None):
+    """
+    Segment text into sentences using pySBD (Pragmatic Sentence Boundary Disambiguation).
 
-    # Search for instances of items and check for comma after instance; if no comma, add one
-    items_to_check = ['E.g.', 'e.g.', 'i.e.', 'et al.', 'Fig.', 'fig.', 'Figs.', 'ca.', 'c.', 'Eq.', 'eq.', 'approx.', 'Mr.', 'Ms.', 'Mrs.', 'Dr.'] + custom_items
-    for item in items_to_check:
-        document_text = re.sub(r'({0})(?![,])'.format(re.escape(item)), r'\1,', document_text)
+    pySBD correctly handles academic abbreviations (Dr., et al., Fig., ca., approx.),
+    decimal notation, numbered items, and quoted speech. Single newlines from PDF
+    line-wrapping are normalised to spaces before segmentation so output sentences
+    contain no embedded newline characters.
 
-    # Use regex to extract sentences that start with a capital letter and end with a valid sentence ending
-    sentence_pattern = r'([A-Z].*?[.!?]["\'\)\]]?(?:\s|$))'
-    # [A-Z] Match an uppercase letter (start of a sentence)
-    # .*? Match any characters (non-greedy)
-    # [``.!?] Match a valid sentence-ending punctuation (period, exclamation point, or question mark)
-    # ["\'\)\]]? Match optional quotation mark or bracket
-    # (?:\s|$) Match a whitespace character or end of line
-    extracted_sentences = re.findall(sentence_pattern, document_text)
+    Args:
+        text (str): Input document text.
+        custom_items: Deprecated. Retained for backward compatibility; has no effect.
 
-    # Exclude sentences that contain carriage returns
-    extracted_sentences = [sentence for sentence in extracted_sentences if '\r' not in sentence]
-    
-    return extracted_sentences
+    Returns:
+        list[str]: List of sentence strings, free of embedded newlines.
+    """
+    text = text.replace(' ', ' ')
+    text = _normalize_line_breaks(text)
+    segmenter = pysbd.Segmenter(language='en', clean=False)
+    sentences = segmenter.segment(text)
+    return [s.strip() for s in sentences if s.strip()]
+
 
 def segment_paragraphs(text):
-    # Split by double newlines or other paragraph markers
-    return [p.strip() for p in text.split("\n") if p.strip()]
+    """
+    Segment text into paragraphs by splitting on blank lines.
+
+    Within each paragraph, single newlines (PDF line-wrap artifacts) are collapsed
+    to spaces so output paragraphs contain no embedded newline characters.
+
+    Known limitation: PDFs in which paragraphs are separated by only a single
+    newline (no blank line) in the extracted text cannot be reliably segmented.
+    Use granularity="sentence" (the default) for PDF files.
+
+    Args:
+        text (str): Input document text.
+
+    Returns:
+        list[str]: List of paragraph strings, free of embedded newlines.
+    """
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    paragraphs = re.split(r'\n{2,}', text)
+    result = []
+    for p in paragraphs:
+        p = _normalize_line_breaks(p).strip()
+        if p:
+            result.append(p)
+    return result
