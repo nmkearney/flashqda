@@ -11,9 +11,6 @@ pip install flashqda
 
 Optional dependency groups:
 
-<<<<<<< HEAD
-For more information, visit https://github.com/nmkearney/flashqda.
-=======
 ```bash
 pip install "flashqda[grouping]"        # semantic grouping (group_items)
 pip install "flashqda[preprocessing]"   # PDF and DOCX support
@@ -91,4 +88,3 @@ If you use FlashQDA in your research, please cite:
 - GitHub: [https://github.com/nmkearney/flashqda](https://github.com/nmkearney/flashqda)
 - PyPI: [https://pypi.org/project/flashqda](https://pypi.org/project/flashqda)
 - Issues: [https://github.com/nmkearney/flashqda/issues](https://github.com/nmkearney/flashqda/issues)
->>>>>>> bf29b84 (Release v1.2.2)
